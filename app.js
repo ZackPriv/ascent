@@ -1,6 +1,7 @@
-/* ---------- PLAN DATA (plan fixe) ---------- */
+/* ---------- PLAN DATA ---------- */
+// Le plan est chargé depuis plan.json au démarrage (voir init()).
 // Rotation 5 séances (J1..J5) sur 7 jours. 48h+ de repos par groupe musculaire.
-// Bloc A = semaines 1-2 (cale sur le test) ; Bloc B = semaines 3-4 (montée).
+// Bloc A = semaines 1-2 ; Bloc B = semaines 3-4. Édite plan.json pour changer le plan.
 const REST = {rest:true, focus:"Repos / course", note:"Récup active : marche, mobilité, ou footing léger 20-25 min en fractionné. Pas de tirage juste avant une séance de tirage."};
 
 function ex(nm,dt,timer){return {nm,dt,timer:timer||0};}
@@ -29,96 +30,21 @@ function parseEx(e){
   return {mobility:false, sets, reps, isHold, holdSec, rest, perLeg};
 }
 
-// buildBlock(b) → b=0 (A, fondation) ou 1 (B, montée). Plan fixe.
-function buildBlock(b){
-  if(b===0){ // BLOC A — fondation
-    return {
-      J1:{focus:"Tirage + Crow", ex:[
-        ex("Tractions strictes","5 × 3 · repos 75s"),
-        ex("Négatives traction","3 × 5s descente"),
-        ex("Rows sous table","3 × 8"),
-        ex("Crow hold","6 × 5s",5),
-        ex("Scapular pulls","3 × 8"),
-        ex("Souplesse flexion + poignets","5 min",300),
-      ]},
-      J2:{focus:"Poussée + Gainage", ex:[
-        ex("Pompes","4 × 14 · repos 60s"),
-        ex("Pompes diamant","3 × 9"),
-        ex("Dips sur chaise","4 × 8"),
-        ex("Tuck L-sit","4 × 12s",12),
-        ex("Hollow hold","3 × 20s",20),
-        ex("Souplesse épaules","5 min",300),
-      ]},
-      J3:{focus:"Skill + Souplesse", ex:[
-        ex("Wall handstand","6 × 6s",6),
-        ex("Crow hold","5 × 5s",5),
-        ex("Dead hang","3 × 35s",35),
-        ex("Squat profond tenu","3 × 40s",40),
-        ex("Flexion avant","3 × 40s",40),
-        ex("Hanches + poignets","5 min",300),
-      ]},
-      J4:{focus:"Tirage + Jambes", ex:[
-        ex("Tractions strictes","5 × 3"),
-        ex("Rows sous table","4 × 8"),
-        ex("Squats lestés (sac)","4 × 15"),
-        ex("Fentes","3 × 10 / jambe"),
-        ex("Mollets","3 × 20"),
-        ex("Souplesse ischios","5 min",300),
-      ]},
-      J5:{focus:"Poussée + Handstand", ex:[
-        ex("Pompes","4 × 15"),
-        ex("Pike pushups","4 × 8"),
-        ex("Wall handstand","6 × 7s",7),
-        ex("Crow hold","5 × 5s",5),
-        ex("Hollow hold","3 × 25s",25),
-        ex("Poignets","5 min",300),
-      ]},
-    };
+// Plan chargé depuis plan.json, transformé vers la forme interne {focus, ex:[{nm,dt,timer}]}.
+let PLAN=null;
+function buildPlan(raw){
+  const out={};
+  for(const block of ["A","B"]){
+    out[block]={};
+    for(const day in raw[block]){
+      const s=raw[block][day];
+      out[block][day]={focus:s.focus, ex:s.exercices.map(x=>ex(x.nom,x.series,x.secondes))};
+    }
   }
-  // BLOC B — montée (+ volume / + secondes)
-  return {
-    J1:{focus:"Tirage + Crow", ex:[
-      ex("Tractions strictes","5 × 3 · vise +1 rep au test"),
-      ex("Négatives traction","3 × 6s descente"),
-      ex("Rows sous table","4 × 8"),
-      ex("Crow hold","6 × 6s",6),
-      ex("Scapular pulls","3 × 10"),
-      ex("Souplesse flexion + poignets","5 min",300),
-    ]},
-    J2:{focus:"Poussée + Gainage", ex:[
-      ex("Pompes","4 × 16 · repos 60s"),
-      ex("Pompes diamant","3 × 11"),
-      ex("Dips sur chaise","4 × 10"),
-      ex("Tuck L-sit","4 × 15s",15),
-      ex("Hollow hold","3 × 25s",25),
-      ex("Souplesse épaules","5 min",300),
-    ]},
-    J3:{focus:"Skill + Souplesse", ex:[
-      ex("Wall handstand face mur","6 × 7s",7),
-      ex("Crow hold","5 × 6s",6),
-      ex("Dead hang","3 × 40s",40),
-      ex("Squat profond tenu","3 × 45s",45),
-      ex("Flexion avant","3 × 45s",45),
-      ex("Hanches + poignets","5 min",300),
-    ]},
-    J4:{focus:"Tirage + Jambes", ex:[
-      ex("Tractions strictes","5 × 3-4"),
-      ex("Rows sous table","4 × 10"),
-      ex("Squats lestés (sac)","4 × 18"),
-      ex("Fentes","3 × 12 / jambe"),
-      ex("Mollets","3 × 25"),
-      ex("Souplesse ischios","5 min",300),
-    ]},
-    J5:{focus:"Poussée + Handstand", ex:[
-      ex("Pompes","4 × 17"),
-      ex("Pike pushups","4 × 10"),
-      ex("Wall handstand","6 × 8s",8),
-      ex("Crow hold","5 × 5s",5),
-      ex("Hollow hold","3 × 30s",30),
-      ex("Poignets","5 min",300),
-    ]},
-  };
+  return out;
 }
+// buildBlock(b) → b=0 (A) ou 1 (B).
+function buildBlock(b){ return PLAN[b===0?"A":"B"]; }
 
 // Schéma de semaine à partir de demain (Dim) : Dim=J1, Lun=J2, Mar=repos, Mer=J3, Jeu=J4, Ven=J5, Sam=repos
 // JS getDay(): 0=Dim..6=Sam
@@ -518,4 +444,22 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
 /* ---------- INIT ---------- */
 // au lancement, si le cycle commence dans le futur, sélectionne son premier jour
 if(START>=new Date()){selected=fmt(START);viewMonth=new Date(START);}
-renderCal();updateStreak();
+localStorage.removeItem("ascent_max"); // nettoyage : ancienne clé des maxs, plus utilisée
+
+function showLoadError(){
+  views.cal.innerHTML=`<div class="panel"><h2 style="font-size:18px;margin-bottom:8px">Plan indisponible</h2>
+    <p style="color:var(--mut);font-size:14px;line-height:1.6">Impossible de charger <b>plan.json</b>. Vérifie que le fichier est bien présent à côté de l'app, puis recharge la page.</p></div>`;
+}
+async function init(){
+  try{
+    const res=await fetch("plan.json");
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    PLAN=buildPlan(await res.json());
+  }catch(err){
+    console.error("Échec du chargement de plan.json :",err);
+    showLoadError();
+    return;
+  }
+  renderCal();updateStreak();
+}
+init();
