@@ -33,9 +33,17 @@ function parseEx(e){
   return {mobility:false, sets, reps, isHold, holdSec, rest, perLeg};
 }
 
-// CATALOG = contenu de exercises.json : { id: {nom, type, cues} }.
+// CATALOG = contenu de exercises.json : { id: {nom, type, cues, categorie, muscles} }.
 // PLAN = plan.json transformé vers la forme interne {focus, ex:[{nm,dt,timer,type,id}]}.
 let CATALOG=null, PLAN=null;
+
+// Tables de correspondance pour l'affichage (les données brutes sont sans accent/espace).
+// categorie : liste fermée de 7 valeurs ; muscles : liste fermée de 12 valeurs.
+const CATEGORY_LABELS={tirage:"Tirage", poussee:"Poussée", jambes:"Jambes", gainage:"Gainage", skill:"Skill", mobilite:"Mobilité", souplesse:"Souplesse"};
+const CATEGORY_ORDER=["tirage","poussee","jambes","gainage","skill","mobilite","souplesse"];
+const MUSCLE_LABELS={dos:"Dos", biceps:"Biceps", pectoraux:"Pectoraux", triceps:"Triceps", epaules:"Épaules", "avant-bras":"Avant-bras", abdos:"Abdos", lombaires:"Lombaires", fessiers:"Fessiers", quadriceps:"Quadriceps", ischios:"Ischios", mollets:"Mollets"};
+function muscleLabel(m){ return MUSCLE_LABELS[m] || (m? String(m).charAt(0).toUpperCase()+String(m).slice(1) : ""); }
+function categoryLabel(c){ return CATEGORY_LABELS[c] || (c? String(c).charAt(0).toUpperCase()+String(c).slice(1) : ""); }
 // Résout les identifiants du plan vers les noms/types du catalogue.
 // Lève une erreur listant les identifiants manquants (gérée dans init()).
 function buildPlan(raw){
@@ -313,12 +321,42 @@ function renderDay(){
     html+=`<div class="ex${done[i]?' done':''}" data-i="${i}">
       <div class="check" onclick="toggleEx(${i})"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
       <div class="body"><div class="nm">${esc(e.nm)}</div><div class="dt">${esc(e.dt)}</div></div>
+      ${(e.id&&CATALOG[e.id])?`<button class="info-btn" onclick="openExDetail('${esc(e.id)}')" aria-label="Détail de l'exercice">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg></button>`:""}
       ${e.timer?`<button class="timer-btn" onclick="openTimer('${esc(e.nm).replace(/'/g,"")}',${e.timer})">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>${e.timer}s</button>`:""}
     </div>`;
   });
   host.innerHTML=html+customBar(sess)+reportBar(false);
 }
+/* ---------- DÉTAIL D'UN EXERCICE (lecture seule du catalogue) ---------- */
+// Affiche catégorie, muscles (étiquettes lisibles via table de correspondance)
+// et cues. Tolère le vieux format (champs absents) sans planter.
+window.openExDetail=function(id){
+  const cat=CATALOG[id]; if(!cat) return;
+  let html=`<button class="tclose" onclick="closeExDetail()" aria-label="Fermer">×</button>
+    <h3 class="ex-d-title">${esc(cat.nom)}</h3>`;
+  if(cat.categorie && CATEGORY_LABELS[cat.categorie]){
+    html+=`<div class="ex-d-cat">${esc(categoryLabel(cat.categorie))}</div>`;
+  }
+  html+=`<div class="ex-d-sec"><span class="ex-d-lbl">Muscles</span>`;
+  const muscles=Array.isArray(cat.muscles)?cat.muscles:[];
+  if(muscles.length){
+    html+=`<div class="ex-d-tags">`+muscles.map(m=>`<span class="muscle-tag">${esc(muscleLabel(m))}</span>`).join("")+`</div>`;
+  }else{
+    html+=`<p class="ex-d-empty">Muscles non renseignés</p>`;
+  }
+  html+=`</div>`;
+  const cues=Array.isArray(cat.cues)?cat.cues:[];
+  if(cues.length){
+    html+=`<div class="ex-d-sec"><span class="ex-d-lbl">Points clés</span>
+      <ul class="ex-d-cues">`+cues.map(c=>`<li>${esc(c)}</li>`).join("")+`</ul></div>`;
+  }
+  document.getElementById("exDetailBody").innerHTML=html;
+  document.getElementById("exModal").classList.add("on");
+};
+window.closeExDetail=function(){document.getElementById("exModal").classList.remove("on");};
+
 /* ---------- PLACEMENT D'UNE SÉANCE PERSO ---------- */
 const ICON_STAR=`<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6L12 17l-5.4 2.6 1.2-6-4.5-4.2 6.1-.8z"/></svg>`;
 const ICON_TRASH=`<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>`;
@@ -496,8 +534,23 @@ window.resetCust=function(){
 // builderState = brouillon en cours d'édition : {id, name, ex:[{exId,mode,sets,reps,holdSec,rest,text}]}.
 let builderState=null;
 function catalogOptions(){
-  return Object.keys(CATALOG).sort((a,b)=>CATALOG[a].nom.localeCompare(CATALOG[b].nom,"fr"))
-    .map(id=>`<option value="${id}">${esc(CATALOG[id].nom)}</option>`).join("");
+  // Regroupe les exercices par catégorie via <optgroup>. Les exercices sans
+  // catégorie (vieux format) tombent dans un groupe "Autres" en fin de liste.
+  const groups={}; // categorie -> [ids]
+  Object.keys(CATALOG).forEach(id=>{
+    const c=CATALOG[id].categorie;
+    const key=(c && CATEGORY_LABELS[c])? c : "_autres";
+    (groups[key]||(groups[key]=[])).push(id);
+  });
+  const order=CATEGORY_ORDER.filter(c=>groups[c]);
+  if(groups._autres) order.push("_autres");
+  return order.map(key=>{
+    const label=key==="_autres"?"Autres":CATEGORY_LABELS[key];
+    const opts=groups[key]
+      .sort((a,b)=>CATALOG[a].nom.localeCompare(CATALOG[b].nom,"fr"))
+      .map(id=>`<option value="${id}">${esc(CATALOG[id].nom)}</option>`).join("");
+    return `<optgroup label="${esc(label)}">${opts}</optgroup>`;
+  }).join("");
 }
 window.openBuilder=function(sid){
   if(sid && customData.sessions[sid]){

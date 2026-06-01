@@ -298,6 +298,23 @@ nav.tabs button.on{background:rgba(217,104,47,.10)}
 .pick-empty{color:var(--mut);font-size:14px;line-height:1.5;margin-bottom:14px}
 .pick-create{width:100%;background:linear-gradient(135deg,var(--rust),var(--rust2));color:#fff;border:none;border-radius:12px;padding:14px;font-family:'Bricolage Grotesque';font-weight:700;font-size:15px;cursor:pointer}
 
+/* bouton info (détail exercice) */
+.ex .info-btn{flex-shrink:0;background:var(--panel2);border:1px solid var(--line);color:var(--mut);width:34px;height:34px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.ex .info-btn:active{transform:scale(.95);border-color:var(--gold);color:var(--gold)}
+.ex .info-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+
+/* détail exercice (modal) */
+.excard{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:22px;padding:26px 22px;width:100%;max-width:360px;position:relative;max-height:80vh;overflow:auto}
+.ex-d-title{font-family:'Bricolage Grotesque';font-weight:800;font-size:20px;color:var(--chalk);margin-bottom:8px;padding-right:30px}
+.ex-d-cat{display:inline-block;font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);background:rgba(216,162,58,.12);border:1px solid rgba(216,162,58,.3);border-radius:8px;padding:4px 9px;margin-bottom:16px}
+.ex-d-sec{margin-top:14px}
+.ex-d-lbl{display:block;font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
+.ex-d-tags{display:flex;flex-wrap:wrap;gap:7px}
+.muscle-tag{font-size:12px;font-weight:600;color:var(--chalk);background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:5px 11px}
+.ex-d-empty{font-size:13px;color:var(--dim);font-style:italic}
+.ex-d-cues{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.ex-d-cues li{font-size:13px;line-height:1.45;color:var(--txt)}
+
 /* builder (plein écran) */
 .bld{position:fixed;inset:0;z-index:85;background:var(--bg);display:none;flex-direction:column;
   background-image:radial-gradient(900px 500px at 80% -10%,rgba(216,162,58,.10),transparent 60%)}
