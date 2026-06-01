@@ -51,10 +51,11 @@ function buildBlock(b){ return PLAN[b===0?"A":"B"]; }
 const WEEKMAP = {0:"J1",1:"J2",2:"REST",3:"J3",4:"J4",5:"J5",6:"REST"};
 
 /* ---------- STATE / STORAGE ---------- */
-const LS_DONE="ascent_done", LS_START="ascent_start";
+const LS_DONE="ascent_done", LS_START="ascent_start", LS_LOG="ascent_log";
 function load(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}}
 function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
 let doneMap = load(LS_DONE,{});      // {"2026-05-31":[true,false,...]}
+let logMap  = load(LS_LOG,{});       // {"2026-05-31":{date,type,focus,ex:[{nm,r}]}} — r: "done"|"hard"|"skip"
 // Début du cycle = dimanche 31 mai 2026 (premier J1).
 const CYCLE_START = "2026-05-31";
 if(!localStorage.getItem(LS_START)) save(LS_START, CYCLE_START);
@@ -80,8 +81,34 @@ function weekNum(date){
   return ((Math.floor(days/7)%4)+4)%4 + 1;
 }
 
+/* ---------- JOURNAL (historique des séances) ---------- */
+// Enregistre/maj une entrée datée. outcomes : tableau par exo de "done"|"hard"|"skip".
+function recordSession(ds, sess, outcomes){
+  logMap[ds]={
+    date: ds,
+    type: WEEKMAP[parse(ds).getDay()],
+    focus: sess.focus,
+    ex: sess.ex.map((e,i)=>({nm:e.nm, r:outcomes[i]||"skip"}))
+  };
+  save(LS_LOG, logMap);
+}
+// Depuis la vue jour : n'enregistre que si tous les exos sont cochés.
+// Préserve un "hard" déjà connu (séance d'abord faite en mode guidé).
+function recordFromDay(ds){
+  const sess=sessionFor(parse(ds));
+  if(sess.rest) return;
+  const done=doneMap[ds];
+  if(!done || done.filter(Boolean).length < sess.ex.length) return;
+  const prev=logMap[ds];
+  const outcomes=sess.ex.map((e,i)=>{
+    if(prev && prev.ex[i] && prev.ex[i].r==="hard") return "hard";
+    return done[i] ? "done" : "skip";
+  });
+  recordSession(ds, sess, outcomes);
+}
+
 /* ---------- TABS ---------- */
-const views={cal:document.getElementById("v-cal"),day:document.getElementById("v-day")};
+const views={cal:document.getElementById("v-cal"),day:document.getElementById("v-day"),log:document.getElementById("v-log")};
 document.querySelectorAll("nav.tabs button").forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll("nav.tabs button").forEach(x=>x.classList.remove("on"));
@@ -89,6 +116,7 @@ document.querySelectorAll("nav.tabs button").forEach(b=>{
     Object.values(views).forEach(v=>v.classList.remove("on"));
     const v=b.dataset.v; views[v].classList.add("on");
     if(v==="day") renderDay();
+    if(v==="log") renderLog();
   };
 });
 
@@ -180,6 +208,7 @@ window.toggleEx=function(i){
   if(!doneMap[selected]) doneMap[selected]=new Array(sess.ex.length).fill(false);
   doneMap[selected][i]=!doneMap[selected][i];
   save(LS_DONE,doneMap);
+  recordFromDay(selected);
   renderDay(); updateStreak();
 };
 
@@ -196,6 +225,40 @@ function shiftDay(n){
   const d=parse(selected); d.setDate(d.getDate()+n);
   selected=fmt(d); viewMonth=new Date(d.getFullYear(),d.getMonth(),1);
   renderDay(); renderCal();
+}
+
+/* ---------- JOURNAL VIEW ---------- */
+const BACKUP_HTML=`<div class="panel backup">
+  <div class="sec-k">Sauvegarde</div>
+  <p class="backup-note">Exporte un fichier JSON de toutes tes données, ou restaure une sauvegarde.</p>
+  <div class="backup-btns">
+    <button class="bk-export" onclick="exportData()">⬇ Exporter mes données</button>
+    <button class="bk-import" onclick="triggerImport()">⬆ Importer mes données</button>
+  </div></div>`;
+function renderLog(){
+  const host=views.log;
+  const keys=Object.keys(logMap).sort().reverse(); // plus récent → plus ancien
+  if(!keys.length){
+    host.innerHTML=`<div class="panel log-empty"><div class="ic">📓</div>
+      <h2>Aucune séance enregistrée</h2>
+      <p>Termine une séance (mode guidé ou en cochant tous les exercices) pour la voir apparaître ici.</p></div>`+BACKUP_HTML;
+    return;
+  }
+  const RLBL={done:"réussis",hard:"trop dur",skip:"passés"};
+  let html=`<div class="log-head"><h2>Journal</h2><span>${keys.length} séance${keys.length>1?"s":""}</span></div>`;
+  keys.forEach(ds=>{
+    const en=logMap[ds], dt=parse(ds);
+    const dateLbl=`${DOWFULL[dt.getDay()]} ${dt.getDate()} ${MN[dt.getMonth()]}`;
+    const nb=r=>en.ex.filter(x=>x.r===r).length;
+    const stat=r=>nb(r)?`<span class="ls ${r}">${nb(r)} ${RLBL[r]}</span>`:"";
+    html+=`<div class="log-card">
+      <div class="log-top"><span class="log-tag">${en.type}</span>
+        <div class="log-info"><div class="log-date">${dateLbl}</div><div class="log-focus">${en.focus}</div></div></div>
+      <div class="log-stats">${stat("done")}${stat("hard")}${stat("skip")}</div>
+      <div class="log-ex">${en.ex.map(x=>`<div class="lex ${x.r}"><i></i>${x.nm}</div>`).join("")}</div>
+    </div>`;
+  });
+  host.innerHTML=html+BACKUP_HTML;
 }
 
 /* ---------- STREAK ---------- */
@@ -215,9 +278,18 @@ function updateStreak(){
 
 /* ---------- GUIDED SESSION ---------- */
 // Construit la file d'étapes : pour chaque exo → séries (work) entrecoupées de repos.
-let gsQueue=[], gsIdx=0, gsSessDate=null, gsExCount=0;
+let gsQueue=[], gsIdx=0, gsSessDate=null, gsExCount=0, gsOutcome=[];
 let gsTimer=null, gsLeft=0, gsTotal=0;
 const GS_CIRC=2*Math.PI*100; // r=100
+
+// Résultat par exo pour le journal. Priorité : hard > done > skip (hard reste collant).
+function setOutcome(ei,r){
+  const cur=gsOutcome[ei];
+  if(r==="hard"){gsOutcome[ei]="hard";return;}
+  if(cur==="hard")return;
+  if(r==="done"){gsOutcome[ei]="done";return;}
+  if(!cur)gsOutcome[ei]="skip";
+}
 
 function buildQueue(sess){
   const q=[];
@@ -239,7 +311,7 @@ window.startSession=function(){
   const dt=parse(selected), sess=sessionFor(dt);
   if(sess.rest) return;
   gsSessDate=selected; gsExCount=sess.ex.length;
-  gsQueue=buildQueue(sess); gsIdx=0;
+  gsQueue=buildQueue(sess); gsIdx=0; gsOutcome=new Array(sess.ex.length);
   if(!doneMap[selected]) doneMap[selected]=new Array(sess.ex.length).fill(false);
   document.getElementById("gs").classList.add("on");
   try{document.body.style.overflow="hidden";}catch(e){}
@@ -353,12 +425,12 @@ function renderStep(){
         if(phaseEl)phaseEl.textContent=phase.toUpperCase();
         if(hintEl)hintEl.textContent="Tiens la position";
         try{navigator.vibrate&&navigator.vibrate(80);}catch(e){};
-        startGsTimer(st.holdSec,()=>{try{navigator.vibrate&&navigator.vibrate([150,60,150]);}catch(e){};beep();markWork(st);next();});
+        startGsTimer(st.holdSec,()=>{try{navigator.vibrate&&navigator.vibrate([150,60,150]);}catch(e){};beep();setOutcome(st.ei,"done");markWork(st);next();});
       });
     };
     document.getElementById("gsRestart").onclick=()=>{ runHold(); };
-    document.getElementById("gsStop").onclick=()=>{stopGsTimer();markWork(st);next();};
-    document.getElementById("gsDone").onclick=()=>{stopGsTimer();markWork(st);next();};
+    document.getElementById("gsStop").onclick=()=>{stopGsTimer();setOutcome(st.ei,"done");markWork(st);next();};
+    document.getElementById("gsDone").onclick=()=>{stopGsTimer();setOutcome(st.ei,"done");markWork(st);next();};
     runHold(); // démarre tout seul à l'affichage de l'exo
     return;
   }
@@ -371,9 +443,9 @@ function renderStep(){
     ${upcomingHtml}`;
   foot.innerHTML=`<button class="gs-main done" id="gsOk">Série réussie ✓</button>
     <div class="gs-row"><button id="gsHard">Trop dur</button><button id="gsSkipW">Passer</button></div>`;
-  document.getElementById("gsOk").onclick=()=>{markWork(st);next();};
-  document.getElementById("gsHard").onclick=()=>{markWork(st);toast("Noté. Reste propre, baisse si besoin.");next();};
-  document.getElementById("gsSkipW").onclick=()=>{next();};
+  document.getElementById("gsOk").onclick=()=>{setOutcome(st.ei,"done");markWork(st);next();};
+  document.getElementById("gsHard").onclick=()=>{setOutcome(st.ei,"hard");markWork(st);toast("Noté. Reste propre, baisse si besoin.");next();};
+  document.getElementById("gsSkipW").onclick=()=>{setOutcome(st.ei,"skip");next();};
 }
 
 function markWork(st){
@@ -387,6 +459,13 @@ function next(){ stopGsTimer(); gsIdx++; renderStep(); }
 function renderFinish(){
   document.getElementById("gsBar").style.width="100%";
   document.getElementById("gsProg").textContent="Terminé";
+  // journal : enregistre la séance. Exos jamais atteints → done si coché, sinon skip.
+  if(gsSessDate){
+    const sess=sessionFor(parse(gsSessDate));
+    const dm=doneMap[gsSessDate]||[];
+    const outcomes=sess.ex.map((e,i)=>gsOutcome[i]||(dm[i]?"done":"skip"));
+    recordSession(gsSessDate, sess, outcomes);
+  }
   const done=exProgress();
   document.getElementById("gsBody").innerHTML=`<div class="gs-finish">
     <div class="ic">🏔️</div><h2>Séance bouclée</h2>
@@ -440,6 +519,48 @@ document.querySelectorAll(".tset button").forEach(b=>{b.onclick=()=>{stopTimer()
 /* ---------- TOAST ---------- */
 let toastT=null;
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),1900);}
+
+/* ---------- SAUVEGARDE / RESTAURATION ---------- */
+// Exporte toutes les clés localStorage de l'appli (préfixe "ascent_") en JSON lisible.
+window.exportData=function(){
+  const data={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith("ascent_")) continue;
+    const raw=localStorage.getItem(k);
+    try{data[k]=JSON.parse(raw);}catch(e){data[k]=raw;}
+  }
+  const payload={app:"ASCENT",version:1,exportedAt:new Date().toISOString(),data};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="ascent-sauvegarde-"+fmt(new Date())+".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast("Données exportées");
+};
+window.triggerImport=function(){ document.getElementById("importFile").click(); };
+function importData(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    let payload;
+    try{payload=JSON.parse(reader.result);}catch(e){toast("Fichier JSON illisible");return;}
+    const data=(payload&&payload.data&&typeof payload.data==="object")?payload.data:payload;
+    if(!data||typeof data!=="object"){toast("Format non reconnu");return;}
+    const keys=Object.keys(data).filter(k=>k.startsWith("ascent_"));
+    if(!keys.length){toast("Aucune donnée ASCENT dans ce fichier");return;}
+    if(!confirm(`Restaurer ${keys.length} clé(s) ? Tes données actuelles seront remplacées.`)) return;
+    keys.forEach(k=>localStorage.setItem(k, JSON.stringify(data[k])));
+    location.reload();
+  };
+  reader.onerror=()=>toast("Erreur de lecture du fichier");
+  reader.readAsText(file);
+}
+document.getElementById("importFile").onchange=function(e){
+  const f=e.target.files&&e.target.files[0];
+  if(f) importData(f);
+  e.target.value=""; // permet de réimporter le même fichier ensuite
+};
 
 /* ---------- INIT ---------- */
 // au lancement, si le cycle commence dans le futur, sélectionne son premier jour

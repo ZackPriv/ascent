@@ -173,3 +173,39 @@ nav.tabs button.on{background:rgba(217,104,47,.10)}
 .gs-finish .stat2 div{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
 .gs-finish .stat2 .v{font-size:26px;font-weight:800;color:var(--chalk)}
 .gs-finish .stat2 .l{font-family:'Spline Sans Mono';font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+
+/* journal */
+.log-head{display:flex;align-items:baseline;justify-content:space-between;padding:6px 2px 14px}
+.log-head h2{font-size:25px;font-weight:800;letter-spacing:-.01em}
+.log-head span{font-family:'Spline Sans Mono';font-size:11px;color:var(--mut);letter-spacing:.06em}
+.log-empty{text-align:center;padding:44px 20px}
+.log-empty .ic{font-size:40px;margin-bottom:12px}
+.log-empty h2{font-size:19px;font-weight:700;margin-bottom:8px}
+.log-empty p{color:var(--mut);font-size:14px;line-height:1.6}
+.log-card{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--r);padding:15px;margin-bottom:12px}
+.log-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.log-tag{flex-shrink:0;width:42px;height:42px;border-radius:11px;background:rgba(217,104,47,.14);color:var(--rust2);font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center}
+.log-info{min-width:0}
+.log-date{font-size:15px;font-weight:600;text-transform:capitalize}
+.log-focus{font-family:'Spline Sans Mono';font-size:11px;color:var(--mut);margin-top:2px}
+.log-stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.log-stats .ls{font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.04em;padding:5px 10px;border-radius:20px;border:1px solid var(--line)}
+.log-stats .ls.done{color:var(--moss);border-color:rgba(139,160,90,.4)}
+.log-stats .ls.hard{color:var(--rust2);border-color:rgba(217,104,47,.4)}
+.log-stats .ls.skip{color:var(--dim)}
+.log-ex{display:flex;flex-direction:column;gap:7px;border-top:1px solid var(--line);padding-top:12px}
+.lex{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--chalk)}
+.lex i{flex-shrink:0;width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.lex.done i{background:var(--moss)}
+.lex.hard i{background:var(--rust)}
+.lex.skip{color:var(--dim)}
+.lex.skip i{background:transparent;border:1px solid var(--dim)}
+
+/* backup */
+.backup{margin-top:4px}
+.backup-note{color:var(--mut);font-size:13px;line-height:1.5;margin-bottom:14px}
+.backup-btns{display:flex;flex-direction:column;gap:10px}
+.backup-btns button{width:100%;padding:14px;border-radius:12px;font-family:'Bricolage Grotesque';font-weight:700;font-size:15px;cursor:pointer}
+.bk-export{background:var(--moss);color:#16130f;border:none}
+.bk-import{background:var(--panel2);color:var(--chalk);border:1px solid var(--line)}
+.backup-btns button:active{transform:scale(.99)}
