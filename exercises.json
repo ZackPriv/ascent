@@ -1,0 +1,30 @@
+{
+  "pullup_strict":        { "nom": "Tractions strictes",          "type": "reps",  "cues": [] },
+  "pullup_negative":      { "nom": "Négatives traction",          "type": "hold",  "cues": [] },
+  "row_table":            { "nom": "Rows sous table",             "type": "reps",  "cues": [] },
+  "scapular_pull":        { "nom": "Scapular pulls",              "type": "reps",  "cues": [] },
+  "dead_hang":            { "nom": "Dead hang",                   "type": "hold",  "cues": [] },
+
+  "pushup":               { "nom": "Pompes",                      "type": "reps",  "cues": [] },
+  "pushup_diamond":       { "nom": "Pompes diamant",              "type": "reps",  "cues": [] },
+  "dip_chair":            { "nom": "Dips sur chaise",             "type": "reps",  "cues": [] },
+  "pike_pushup":          { "nom": "Pike pushups",                "type": "reps",  "cues": [] },
+
+  "crow_hold":            { "nom": "Crow hold",                   "type": "hold",  "cues": [] },
+  "tuck_lsit":            { "nom": "Tuck L-sit",                  "type": "hold",  "cues": [] },
+  "hollow_hold":          { "nom": "Hollow hold",                 "type": "hold",  "cues": [] },
+  "handstand_wall":       { "nom": "Wall handstand",              "type": "hold",  "cues": [] },
+  "handstand_wall_face":  { "nom": "Wall handstand face mur",     "type": "hold",  "cues": [] },
+
+  "squat_weighted":       { "nom": "Squats lestés (sac)",        "type": "reps",  "cues": [] },
+  "lunge":                { "nom": "Fentes",                      "type": "reps",  "cues": [] },
+  "calf_raise":           { "nom": "Mollets",                     "type": "reps",  "cues": [] },
+  "squat_hold":           { "nom": "Squat profond tenu",          "type": "hold",  "cues": [] },
+
+  "forward_fold":         { "nom": "Flexion avant",               "type": "hold",  "cues": [] },
+  "mobility_flex_wrists": { "nom": "Souplesse flexion + poignets", "type": "libre", "cues": [] },
+  "mobility_shoulders":   { "nom": "Souplesse épaules",           "type": "libre", "cues": [] },
+  "mobility_hips_wrists": { "nom": "Hanches + poignets",          "type": "libre", "cues": [] },
+  "mobility_hamstrings":  { "nom": "Souplesse ischios",           "type": "libre", "cues": [] },
+  "mobility_wrists":      { "nom": "Poignets",                    "type": "libre", "cues": [] }
+}

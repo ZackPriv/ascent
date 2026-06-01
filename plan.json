@@ -3,56 +3,56 @@
     "J1": {
       "focus": "Tirage + Crow",
       "exercices": [
-        { "nom": "Tractions strictes", "series": "5 × 3 · repos 75s" },
-        { "nom": "Négatives traction", "series": "3 × 5s descente" },
-        { "nom": "Rows sous table", "series": "3 × 8" },
-        { "nom": "Crow hold", "series": "6 × 5s", "secondes": 5 },
-        { "nom": "Scapular pulls", "series": "3 × 8" },
-        { "nom": "Souplesse flexion + poignets", "series": "5 min", "secondes": 300 }
+        { "id": "pullup_strict", "series": "5 × 3 · repos 75s" },
+        { "id": "pullup_negative", "series": "3 × 5s descente" },
+        { "id": "row_table", "series": "3 × 8" },
+        { "id": "crow_hold", "series": "6 × 5s", "secondes": 5 },
+        { "id": "scapular_pull", "series": "3 × 8" },
+        { "id": "mobility_flex_wrists", "series": "5 min", "secondes": 300 }
       ]
     },
     "J2": {
       "focus": "Poussée + Gainage",
       "exercices": [
-        { "nom": "Pompes", "series": "4 × 14 · repos 60s" },
-        { "nom": "Pompes diamant", "series": "3 × 9" },
-        { "nom": "Dips sur chaise", "series": "4 × 8" },
-        { "nom": "Tuck L-sit", "series": "4 × 12s", "secondes": 12 },
-        { "nom": "Hollow hold", "series": "3 × 20s", "secondes": 20 },
-        { "nom": "Souplesse épaules", "series": "5 min", "secondes": 300 }
+        { "id": "pushup", "series": "4 × 14 · repos 60s" },
+        { "id": "pushup_diamond", "series": "3 × 9" },
+        { "id": "dip_chair", "series": "4 × 8" },
+        { "id": "tuck_lsit", "series": "4 × 12s", "secondes": 12 },
+        { "id": "hollow_hold", "series": "3 × 20s", "secondes": 20 },
+        { "id": "mobility_shoulders", "series": "5 min", "secondes": 300 }
       ]
     },
     "J3": {
       "focus": "Skill + Souplesse",
       "exercices": [
-        { "nom": "Wall handstand", "series": "6 × 6s", "secondes": 6 },
-        { "nom": "Crow hold", "series": "5 × 5s", "secondes": 5 },
-        { "nom": "Dead hang", "series": "3 × 35s", "secondes": 35 },
-        { "nom": "Squat profond tenu", "series": "3 × 40s", "secondes": 40 },
-        { "nom": "Flexion avant", "series": "3 × 40s", "secondes": 40 },
-        { "nom": "Hanches + poignets", "series": "5 min", "secondes": 300 }
+        { "id": "handstand_wall", "series": "6 × 6s", "secondes": 6 },
+        { "id": "crow_hold", "series": "5 × 5s", "secondes": 5 },
+        { "id": "dead_hang", "series": "3 × 35s", "secondes": 35 },
+        { "id": "squat_hold", "series": "3 × 40s", "secondes": 40 },
+        { "id": "forward_fold", "series": "3 × 40s", "secondes": 40 },
+        { "id": "mobility_hips_wrists", "series": "5 min", "secondes": 300 }
       ]
     },
     "J4": {
       "focus": "Tirage + Jambes",
       "exercices": [
-        { "nom": "Tractions strictes", "series": "5 × 3" },
-        { "nom": "Rows sous table", "series": "4 × 8" },
-        { "nom": "Squats lestés (sac)", "series": "4 × 15" },
-        { "nom": "Fentes", "series": "3 × 10 / jambe" },
-        { "nom": "Mollets", "series": "3 × 20" },
-        { "nom": "Souplesse ischios", "series": "5 min", "secondes": 300 }
+        { "id": "pullup_strict", "series": "5 × 3" },
+        { "id": "row_table", "series": "4 × 8" },
+        { "id": "squat_weighted", "series": "4 × 15" },
+        { "id": "lunge", "series": "3 × 10 / jambe" },
+        { "id": "calf_raise", "series": "3 × 20" },
+        { "id": "mobility_hamstrings", "series": "5 min", "secondes": 300 }
       ]
     },
     "J5": {
       "focus": "Poussée + Handstand",
       "exercices": [
-        { "nom": "Pompes", "series": "4 × 15" },
-        { "nom": "Pike pushups", "series": "4 × 8" },
-        { "nom": "Wall handstand", "series": "6 × 7s", "secondes": 7 },
-        { "nom": "Crow hold", "series": "5 × 5s", "secondes": 5 },
-        { "nom": "Hollow hold", "series": "3 × 25s", "secondes": 25 },
-        { "nom": "Poignets", "series": "5 min", "secondes": 300 }
+        { "id": "pushup", "series": "4 × 15" },
+        { "id": "pike_pushup", "series": "4 × 8" },
+        { "id": "handstand_wall", "series": "6 × 7s", "secondes": 7 },
+        { "id": "crow_hold", "series": "5 × 5s", "secondes": 5 },
+        { "id": "hollow_hold", "series": "3 × 25s", "secondes": 25 },
+        { "id": "mobility_wrists", "series": "5 min", "secondes": 300 }
       ]
     }
   },
@@ -60,56 +60,56 @@
     "J1": {
       "focus": "Tirage + Crow",
       "exercices": [
-        { "nom": "Tractions strictes", "series": "5 × 3 · vise +1 rep au test" },
-        { "nom": "Négatives traction", "series": "3 × 6s descente" },
-        { "nom": "Rows sous table", "series": "4 × 8" },
-        { "nom": "Crow hold", "series": "6 × 6s", "secondes": 6 },
-        { "nom": "Scapular pulls", "series": "3 × 10" },
-        { "nom": "Souplesse flexion + poignets", "series": "5 min", "secondes": 300 }
+        { "id": "pullup_strict", "series": "5 × 3 · vise +1 rep au test" },
+        { "id": "pullup_negative", "series": "3 × 6s descente" },
+        { "id": "row_table", "series": "4 × 8" },
+        { "id": "crow_hold", "series": "6 × 6s", "secondes": 6 },
+        { "id": "scapular_pull", "series": "3 × 10" },
+        { "id": "mobility_flex_wrists", "series": "5 min", "secondes": 300 }
       ]
     },
     "J2": {
       "focus": "Poussée + Gainage",
       "exercices": [
-        { "nom": "Pompes", "series": "4 × 16 · repos 60s" },
-        { "nom": "Pompes diamant", "series": "3 × 11" },
-        { "nom": "Dips sur chaise", "series": "4 × 10" },
-        { "nom": "Tuck L-sit", "series": "4 × 15s", "secondes": 15 },
-        { "nom": "Hollow hold", "series": "3 × 25s", "secondes": 25 },
-        { "nom": "Souplesse épaules", "series": "5 min", "secondes": 300 }
+        { "id": "pushup", "series": "4 × 16 · repos 60s" },
+        { "id": "pushup_diamond", "series": "3 × 11" },
+        { "id": "dip_chair", "series": "4 × 10" },
+        { "id": "tuck_lsit", "series": "4 × 15s", "secondes": 15 },
+        { "id": "hollow_hold", "series": "3 × 25s", "secondes": 25 },
+        { "id": "mobility_shoulders", "series": "5 min", "secondes": 300 }
       ]
     },
     "J3": {
       "focus": "Skill + Souplesse",
       "exercices": [
-        { "nom": "Wall handstand face mur", "series": "6 × 7s", "secondes": 7 },
-        { "nom": "Crow hold", "series": "5 × 6s", "secondes": 6 },
-        { "nom": "Dead hang", "series": "3 × 40s", "secondes": 40 },
-        { "nom": "Squat profond tenu", "series": "3 × 45s", "secondes": 45 },
-        { "nom": "Flexion avant", "series": "3 × 45s", "secondes": 45 },
-        { "nom": "Hanches + poignets", "series": "5 min", "secondes": 300 }
+        { "id": "handstand_wall_face", "series": "6 × 7s", "secondes": 7 },
+        { "id": "crow_hold", "series": "5 × 6s", "secondes": 6 },
+        { "id": "dead_hang", "series": "3 × 40s", "secondes": 40 },
+        { "id": "squat_hold", "series": "3 × 45s", "secondes": 45 },
+        { "id": "forward_fold", "series": "3 × 45s", "secondes": 45 },
+        { "id": "mobility_hips_wrists", "series": "5 min", "secondes": 300 }
       ]
     },
     "J4": {
       "focus": "Tirage + Jambes",
       "exercices": [
-        { "nom": "Tractions strictes", "series": "5 × 3-4" },
-        { "nom": "Rows sous table", "series": "4 × 10" },
-        { "nom": "Squats lestés (sac)", "series": "4 × 18" },
-        { "nom": "Fentes", "series": "3 × 12 / jambe" },
-        { "nom": "Mollets", "series": "3 × 25" },
-        { "nom": "Souplesse ischios", "series": "5 min", "secondes": 300 }
+        { "id": "pullup_strict", "series": "5 × 3-4" },
+        { "id": "row_table", "series": "4 × 10" },
+        { "id": "squat_weighted", "series": "4 × 18" },
+        { "id": "lunge", "series": "3 × 12 / jambe" },
+        { "id": "calf_raise", "series": "3 × 25" },
+        { "id": "mobility_hamstrings", "series": "5 min", "secondes": 300 }
       ]
     },
     "J5": {
       "focus": "Poussée + Handstand",
       "exercices": [
-        { "nom": "Pompes", "series": "4 × 17" },
-        { "nom": "Pike pushups", "series": "4 × 10" },
-        { "nom": "Wall handstand", "series": "6 × 8s", "secondes": 8 },
-        { "nom": "Crow hold", "series": "5 × 5s", "secondes": 5 },
-        { "nom": "Hollow hold", "series": "3 × 30s", "secondes": 30 },
-        { "nom": "Poignets", "series": "5 min", "secondes": 300 }
+        { "id": "pushup", "series": "4 × 17" },
+        { "id": "pike_pushup", "series": "4 × 10" },
+        { "id": "handstand_wall", "series": "6 × 8s", "secondes": 8 },
+        { "id": "crow_hold", "series": "5 × 5s", "secondes": 5 },
+        { "id": "hollow_hold", "series": "3 × 30s", "secondes": 30 },
+        { "id": "mobility_wrists", "series": "5 min", "secondes": 300 }
       ]
     }
   }

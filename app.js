@@ -1,10 +1,12 @@
 /* ---------- PLAN DATA ---------- */
-// Le plan est chargé depuis plan.json au démarrage (voir init()).
+// Le plan (plan.json) et le catalogue d'exercices (exercises.json) sont chargés
+// au démarrage (voir init()). plan.json référence les exercices par identifiant ;
+// exercises.json fournit le nom affiché et le type pour chaque identifiant.
 // Rotation 5 séances (J1..J5) sur 7 jours. 48h+ de repos par groupe musculaire.
-// Bloc A = semaines 1-2 ; Bloc B = semaines 3-4. Édite plan.json pour changer le plan.
+// Bloc A = semaines 1-2 ; Bloc B = semaines 3-4.
 const REST = {rest:true, focus:"Repos / course", note:"Récup active : marche, mobilité, ou footing léger 20-25 min en fractionné. Pas de tirage juste avant une séance de tirage."};
 
-function ex(nm,dt,timer){return {nm,dt,timer:timer||0};}
+function ex(nm,dt,timer,type,id){return {nm,dt,timer:timer||0,type:type||"",id:id||""};}
 
 // Parse une ligne d'exercice en plan de séries pour le mode guidé.
 // Renvoie {sets, reps, isHold, holdSec, rest, perLeg, label, mobility}
@@ -30,17 +32,25 @@ function parseEx(e){
   return {mobility:false, sets, reps, isHold, holdSec, rest, perLeg};
 }
 
-// Plan chargé depuis plan.json, transformé vers la forme interne {focus, ex:[{nm,dt,timer}]}.
-let PLAN=null;
+// CATALOG = contenu de exercises.json : { id: {nom, type, cues} }.
+// PLAN = plan.json transformé vers la forme interne {focus, ex:[{nm,dt,timer,type,id}]}.
+let CATALOG=null, PLAN=null;
+// Résout les identifiants du plan vers les noms/types du catalogue.
+// Lève une erreur listant les identifiants manquants (gérée dans init()).
 function buildPlan(raw){
-  const out={};
+  const out={}, missing=new Set();
   for(const block of ["A","B"]){
     out[block]={};
     for(const day in raw[block]){
       const s=raw[block][day];
-      out[block][day]={focus:s.focus, ex:s.exercices.map(x=>ex(x.nom,x.series,x.secondes))};
+      out[block][day]={focus:s.focus, ex:s.exercices.map(x=>{
+        const cat=CATALOG[x.id];
+        if(!cat){ missing.add(x.id); return ex("⚠ "+x.id, x.series, x.secondes); }
+        return ex(cat.nom, x.series, x.secondes, cat.type, x.id);
+      })};
     }
   }
+  if(missing.size) throw new Error("Identifiant(s) absent(s) de exercises.json : "+[...missing].join(", "));
   return out;
 }
 // buildBlock(b) → b=0 (A) ou 1 (B).
@@ -51,11 +61,15 @@ function buildBlock(b){ return PLAN[b===0?"A":"B"]; }
 const WEEKMAP = {0:"J1",1:"J2",2:"REST",3:"J3",4:"J4",5:"J5",6:"REST"};
 
 /* ---------- STATE / STORAGE ---------- */
-const LS_DONE="ascent_done", LS_START="ascent_start", LS_LOG="ascent_log";
+const LS_DONE="ascent_done", LS_START="ascent_start", LS_LOG="ascent_log", LS_SHIFT="ascent_shift";
 function load(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}}
 function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
 let doneMap = load(LS_DONE,{});      // {"2026-05-31":[true,false,...]}
 let logMap  = load(LS_LOG,{});       // {"2026-05-31":{date,type,focus,ex:[{nm,r}]}} — r: "done"|"hard"|"skip"
+// Reports de séance : liste des dates où un report a été appliqué. Un report à la
+// date R décale d'un jour le planning de R et de tous les jours suivants. Les dates
+// antérieures (séances passées / journal) ne bougent pas. Cumulable, annulable (pop).
+let shiftList = load(LS_SHIFT,[]);   // ex: ["2026-06-07","2026-06-10"]
 // Début du cycle = dimanche 31 mai 2026 (premier J1).
 const CYCLE_START = "2026-05-31";
 if(!localStorage.getItem(LS_START)) save(LS_START, CYCLE_START);
@@ -64,20 +78,32 @@ const START = new Date(load(LS_START, CYCLE_START)+"T00:00:00");
 function fmt(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function parse(s){return new Date(s+"T00:00:00");}
 
+// Nombre de reports applicables à une date (ceux posés à cette date ou avant).
+function shiftCount(ds){let n=0;for(const r of shiftList){if(r<=ds)n++;}return n;}
+// eff(date) → date "planning" : recule la date réelle d'autant de jours que de reports
+// applicables. C'est cette date décalée qui détermine la séance (J1..J5/repos) et le bloc.
+function eff(date){
+  const n=shiftCount(fmt(date));
+  if(!n) return date;
+  const d=new Date(date); d.setDate(d.getDate()-n); return d;
+}
+
+// blockFor/weekNum reçoivent une date "planning" (déjà passée par eff()).
 // bloc d'entraînement selon les semaines écoulées depuis START : 0-1 = A (fondation), 2-3 = B (montée)
-function blockFor(date){
-  const days = Math.floor((date - START)/86400000);
+function blockFor(sched){
+  const days = Math.floor((sched - START)/86400000);
   const week = Math.floor(days/7);
   const inCycle = ((week%4)+4)%4;
   return buildBlock(inCycle<2 ? 0 : 1);
 }
 function sessionFor(date){
-  const key = WEEKMAP[date.getDay()];
+  const sched = eff(date);
+  const key = WEEKMAP[sched.getDay()];
   if(key==="REST") return REST;
-  return blockFor(date)[key];
+  return blockFor(sched)[key];
 }
-function weekNum(date){
-  const days=Math.floor((date-START)/86400000);
+function weekNum(sched){
+  const days=Math.floor((sched-START)/86400000);
   return ((Math.floor(days/7)%4)+4)%4 + 1;
 }
 
@@ -86,7 +112,7 @@ function weekNum(date){
 function recordSession(ds, sess, outcomes){
   logMap[ds]={
     date: ds,
-    type: WEEKMAP[parse(ds).getDay()],
+    type: WEEKMAP[eff(parse(ds)).getDay()],
     focus: sess.focus,
     ex: sess.ex.map((e,i)=>({nm:e.nm, r:outcomes[i]||"skip"}))
   };
@@ -156,7 +182,7 @@ function renderCal(){
     if(st==="partial")c.classList.add("partial");
     if(ds===todayS)c.classList.add("today");
     if(ds===selected)c.classList.add("sel");
-    const key=WEEKMAP[dt.getDay()];
+    const key=WEEKMAP[eff(dt).getDay()];
     c.innerHTML=`<span class="d">${dnum}</span><span class="tag">${sess.rest?"REPOS":key}</span>`+
       ((st==="done"||st==="partial")?`<span class="dot"></span>`:"");
     c.onclick=()=>{selected=ds;goDay();};
@@ -176,19 +202,29 @@ function goDay(){
 
 /* ---------- DAY VIEW ---------- */
 const DOWFULL=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+// Barre de report : décale tout le cycle d'un jour à partir de la séance affichée.
+function reportBar(isRest){
+  const n=shiftList.length;
+  const info=n?`<div class="report-info">Décalage actuel : ${n} jour${n>1?"s":""}</div>`:"";
+  const undo=n?`<button class="report-undo" onclick="undoReport()">Annuler le dernier report</button>`:"";
+  const rep=isRest?"":`<button class="report-btn" onclick="reportSession()">
+    <svg viewBox="0 0 24 24"><path d="M5 4l9 8-9 8V4z"/><path d="M19 5v14"/></svg>Reporter cette séance</button>`;
+  if(!rep&&!undo) return "";
+  return `<div class="report-bar">${rep}${undo}${info}</div>`;
+}
 function renderDay(){
-  const dt=parse(selected), sess=sessionFor(dt);
+  const dt=parse(selected), sched=eff(dt), sess=sessionFor(dt);
   const host=views.day;
   const dateLbl=`${DOWFULL[dt.getDay()]} ${dt.getDate()} ${MN[dt.getMonth()]}`;
   if(sess.rest){
-    host.innerHTML=`<div class="day-hero"><span class="dk">${dateLbl}</span><h2>Jour de repos</h2><span class="focus">Semaine ${weekNum(dt)} du cycle</span></div>
-      <div class="panel rest-card"><div class="ic">🌿</div><h3>${sess.focus}</h3><p>${sess.note}</p></div>`;
+    host.innerHTML=`<div class="day-hero"><span class="dk">${dateLbl}</span><h2>Jour de repos</h2><span class="focus">Semaine ${weekNum(sched)} du cycle</span></div>
+      <div class="panel rest-card"><div class="ic">🌿</div><h3>${sess.focus}</h3><p>${sess.note}</p></div>`+reportBar(true);
     return;
   }
   if(!doneMap[selected]) doneMap[selected]=new Array(sess.ex.length).fill(false);
   const done=doneMap[selected];
-  let html=`<div class="day-hero"><span class="dk">${dateLbl} · Semaine ${weekNum(dt)}</span>
-    <h2>${WEEKMAP[dt.getDay()]} — ${sess.focus}</h2>
+  let html=`<div class="day-hero"><span class="dk">${dateLbl} · Semaine ${weekNum(sched)}</span>
+    <h2>${WEEKMAP[sched.getDay()]} — ${sess.focus}</h2>
     <span class="sub">${done.filter(Boolean).length}/${sess.ex.length} exercices validés</span>
     <span class="focus">⏱ ~30 min · haute densité</span></div>
     <div class="start-bar"><button class="start-btn" onclick="startSession()">
@@ -201,8 +237,30 @@ function renderDay(){
         <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>${e.timer}s</button>`:""}
     </div>`;
   });
-  host.innerHTML=html;
+  host.innerHTML=html+reportBar(false);
 }
+// Reporter la séance affichée : pousse son planning (et les suivants) d'un jour.
+window.reportSession=function(){
+  const d=parse(selected);
+  const lbl=`${DOWFULL[d.getDay()]} ${d.getDate()} ${MN[d.getMonth()]}`;
+  askConfirm({
+    icon:`<svg viewBox="0 0 24 24"><path d="M5 4l9 8-9 8V4z"/><path d="M19 5v14"/></svg>`,
+    title:"Reporter la séance",
+    message:`La séance du ${lbl} glisse au lendemain. Toutes les séances suivantes se décalent aussi d'un jour. Les séances déjà faites ne changent pas.`,
+    okLabel:"Reporter"
+  },()=>{
+    shiftList.push(selected); save(LS_SHIFT,shiftList);
+    renderDay(); renderCal(); updateStreak();
+    toast("Séance reportée d'un jour");
+  });
+};
+// Annuler le dernier report appliqué.
+window.undoReport=function(){
+  if(!shiftList.length) return;
+  shiftList.pop(); save(LS_SHIFT,shiftList);
+  renderDay(); renderCal(); updateStreak();
+  toast("Dernier report annulé");
+};
 window.toggleEx=function(i){
   const dt=parse(selected), sess=sessionFor(dt);
   if(!doneMap[selected]) doneMap[selected]=new Array(sess.ex.length).fill(false);
@@ -520,6 +578,22 @@ document.querySelectorAll(".tset button").forEach(b=>{b.onclick=()=>{stopTimer()
 let toastT=null;
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),1900);}
 
+/* ---------- CONFIRMATION THÉMÉE ---------- */
+// Modale de confirmation intégrée (remplace confirm() natif, non stylable).
+function askConfirm(opts,onYes){
+  const m=document.getElementById("confirmModal");
+  document.getElementById("cmIc").innerHTML=opts.icon||"";
+  document.getElementById("cmTitle").textContent=opts.title||"Confirmer";
+  document.getElementById("cmMsg").textContent=opts.message||"";
+  const ok=document.getElementById("cmOk"), cancel=document.getElementById("cmCancel");
+  ok.textContent=opts.okLabel||"Confirmer";
+  const close=()=>{m.classList.remove("on");ok.onclick=null;cancel.onclick=null;};
+  m.classList.add("on");
+  ok.onclick=()=>{close();onYes&&onYes();};
+  cancel.onclick=close;
+  m.onclick=e=>{if(e.target===m)close();};
+}
+
 /* ---------- SAUVEGARDE / RESTAURATION ---------- */
 // Exporte toutes les clés localStorage de l'appli (préfixe "ascent_") en JSON lisible.
 window.exportData=function(){
@@ -567,18 +641,25 @@ document.getElementById("importFile").onchange=function(e){
 if(START>=new Date()){selected=fmt(START);viewMonth=new Date(START);}
 localStorage.removeItem("ascent_max"); // nettoyage : ancienne clé des maxs, plus utilisée
 
-function showLoadError(){
-  views.cal.innerHTML=`<div class="panel"><h2 style="font-size:18px;margin-bottom:8px">Plan indisponible</h2>
-    <p style="color:var(--mut);font-size:14px;line-height:1.6">Impossible de charger <b>plan.json</b>. Vérifie que le fichier est bien présent à côté de l'app, puis recharge la page.</p></div>`;
+function showLoadError(err){
+  const msg=(err&&err.message)?err.message:"Erreur inconnue";
+  views.cal.innerHTML=`<div class="panel"><h2 style="font-size:18px;margin-bottom:8px">Données indisponibles</h2>
+    <p style="color:var(--mut);font-size:14px;line-height:1.6">Impossible de charger le plan. Vérifie que <b>plan.json</b> et <b>exercises.json</b> sont bien présents à côté de l'app, puis recharge la page.</p>
+    <p style="color:var(--dim);font-family:'Spline Sans Mono';font-size:12px;margin-top:10px;word-break:break-word">${msg}</p></div>`;
+}
+async function loadJSON(path){
+  const res=await fetch(path);
+  if(!res.ok) throw new Error(path+" : HTTP "+res.status);
+  return res.json();
 }
 async function init(){
   try{
-    const res=await fetch("plan.json");
-    if(!res.ok) throw new Error("HTTP "+res.status);
-    PLAN=buildPlan(await res.json());
+    const [rawCatalog, rawPlan]=await Promise.all([loadJSON("exercises.json"), loadJSON("plan.json")]);
+    CATALOG=rawCatalog;
+    PLAN=buildPlan(rawPlan); // résout les identifiants ; lève si un id est absent du catalogue
   }catch(err){
-    console.error("Échec du chargement de plan.json :",err);
-    showLoadError();
+    console.error("Échec du chargement des données :",err);
+    showLoadError(err);
     return;
   }
   renderCal();updateStreak();
