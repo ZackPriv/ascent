@@ -53,6 +53,9 @@
 
   <!-- JOURNAL -->
   <section class="view" id="v-log"></section>
+
+  <!-- PERSO (mes séances) -->
+  <section class="view" id="v-cust"></section>
 </div>
 
 <!-- GUIDED SESSION -->
@@ -107,10 +110,30 @@
   </div>
 </div>
 
+<!-- PICK MODAL : choisir une séance perso à placer -->
+<div class="modal" id="pickModal">
+  <div class="pcard">
+    <button class="tclose" id="pickClose" onclick="closePicker()">×</button>
+    <h3 class="pick-title">Placer une séance perso</h3>
+    <div class="pick-list" id="pickList"></div>
+  </div>
+</div>
+
+<!-- BUILDER : éditeur de séance perso (plein écran) -->
+<div class="bld" id="builder">
+  <div class="bld-top">
+    <button class="x" onclick="closeBuilder()">×</button>
+    <span class="bld-title" id="builderTitle">Nouvelle séance</span>
+    <button class="bld-save" onclick="saveBuilder()">Enregistrer</button>
+  </div>
+  <div class="bld-body" id="builderBody"></div>
+</div>
+
 <nav class="tabs">
   <button class="on" data-v="cal"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Calendrier</button>
   <button data-v="day"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Séance</button>
   <button data-v="log"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Journal</button>
+  <button data-v="cust"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>Perso</button>
 </nav>
 
 <input type="file" id="importFile" accept="application/json,.json" style="display:none">

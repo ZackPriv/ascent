@@ -11,6 +11,7 @@ function ex(nm,dt,timer,type,id){return {nm,dt,timer:timer||0,type:type||"",id:i
 // Parse une ligne d'exercice en plan de séries pour le mode guidé.
 // Renvoie {sets, reps, isHold, holdSec, rest, perLeg, label, mobility}
 function parseEx(e){
+  if(e.plan) return e.plan; // séances perso : plan de séries déjà calculé
   const dt=e.dt;
   // mobilité / souplesse "5 min" → bloc unique chronométré
   const minMatch=dt.match(/(\d+)\s*min/);
@@ -56,20 +57,75 @@ function buildPlan(raw){
 // buildBlock(b) → b=0 (A) ou 1 (B).
 function buildBlock(b){ return PLAN[b===0?"A":"B"]; }
 
+/* ---------- SÉANCES PERSO (surcouche utilisateur) ---------- */
+// Stockées dans LS_CUSTOM, jamais dans plan.json/exercises.json. Une séance perso
+// se compose UNIQUEMENT d'exercices du catalogue (exId). Forme stockée d'un item :
+//   { exId, mode:"reps"|"hold"|"libre", sets, reps, holdSec, rest, text }
+// buildCustomEx transforme un item en exo interne {nm,dt,timer,type,id,plan} :
+//   - "plan" est le plan de séries prêt pour le mode guidé (voir parseEx) → 100%
+//     compatible guidé/journal sans dépendre du format texte de "dt".
+function buildCustomEx(item){
+  const cat=CATALOG[item.exId]||{nom:"⚠ "+item.exId, type:item.mode||"reps"};
+  const nm=cat.nom, id=item.exId, type=cat.type;
+  const mode=item.mode||type||"reps";
+  if(mode==="hold"){
+    const hs=Math.max(0,+item.holdSec||0);
+    const sets=Math.max(1,+item.sets||1);
+    const rest=(item.rest!=null&&item.rest!=="")?Math.max(0,+item.rest):Math.max(30,Math.round(hs*1.5));
+    const dt=`${sets} × ${hs}s`+(rest?` · repos ${rest}s`:"");
+    return {nm,dt,timer:hs,type,id,plan:{mobility:false,sets,reps:hs,isHold:true,holdSec:hs,rest,perLeg:false}};
+  }
+  if(mode==="libre"){
+    const text=(item.text||"Libre").trim()||"Libre";
+    const mm=text.match(/(\d+)\s*min/);
+    if(mm){const sec=+mm[1]*60;return {nm,dt:text,timer:sec,type,id,plan:{mobility:true,sets:1,reps:0,isHold:true,holdSec:sec,rest:0}};}
+    const ss=text.match(/(\d+)\s*s\b/);
+    if(ss){const sec=+ss[1];return {nm,dt:text,timer:sec,type,id,plan:{mobility:true,sets:1,reps:0,isHold:true,holdSec:sec,rest:0}};}
+    return {nm,dt:text,timer:0,type,id,plan:{mobility:true,sets:1,reps:0,isHold:false,holdSec:0,rest:0}};
+  }
+  // reps
+  const sets=Math.max(1,+item.sets||1), reps=Math.max(0,+item.reps||0);
+  const rest=(item.rest!=null&&item.rest!=="")?Math.max(0,+item.rest):60;
+  const dt=`${sets} × ${reps}`+(rest?` · repos ${rest}s`:"");
+  return {nm,dt,timer:0,type,id,plan:{mobility:false,sets,reps,isHold:false,holdSec:0,rest,perLeg:false}};
+}
+// Transforme une séance perso stockée en session interne {custom,focus,ex:[...]}.
+function buildCustomSession(cs){
+  if(!cs||!Array.isArray(cs.ex)) return null;
+  return {custom:true, csId:cs.id, focus:cs.name||"Séance perso", ex:cs.ex.map(buildCustomEx)};
+}
+// Session perso placée sur une date réelle (ds), ou null. La placement prime sur le
+// programme : il remplace la séance prévue ce jour-là sans modifier le programme.
+function customPlacedSession(ds){
+  const sid=customData.placements&&customData.placements[ds];
+  if(!sid) return null;
+  const cs=customData.sessions&&customData.sessions[sid];
+  if(!cs) return null;
+  return buildCustomSession(cs);
+}
+
 // Schéma de semaine à partir de demain (Dim) : Dim=J1, Lun=J2, Mar=repos, Mer=J3, Jeu=J4, Ven=J5, Sam=repos
 // JS getDay(): 0=Dim..6=Sam
 const WEEKMAP = {0:"J1",1:"J2",2:"REST",3:"J3",4:"J4",5:"J5",6:"REST"};
 
 /* ---------- STATE / STORAGE ---------- */
-const LS_DONE="ascent_done", LS_START="ascent_start", LS_LOG="ascent_log", LS_SHIFT="ascent_shift";
+const LS_DONE="ascent_done", LS_START="ascent_start", LS_LOG="ascent_log", LS_SHIFT="ascent_shift", LS_CUSTOM="ascent_custom";
 function load(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}}
 function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+// Échappe le texte saisi par l'utilisateur (noms de séances) avant injection HTML.
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 let doneMap = load(LS_DONE,{});      // {"2026-05-31":[true,false,...]}
 let logMap  = load(LS_LOG,{});       // {"2026-05-31":{date,type,focus,ex:[{nm,r}]}} — r: "done"|"hard"|"skip"
 // Reports de séance : liste des dates où un report a été appliqué. Un report à la
 // date R décale d'un jour le planning de R et de tous les jours suivants. Les dates
 // antérieures (séances passées / journal) ne bougent pas. Cumulable, annulable (pop).
 let shiftList = load(LS_SHIFT,[]);   // ex: ["2026-06-07","2026-06-10"]
+// Séances perso créées par l'utilisateur + leurs placements sur le calendrier.
+// { sessions:{ "<id>":{id,name,ex:[{exId,mode,...}]} }, placements:{ "2026-06-15":"<id>" } }
+let customData = load(LS_CUSTOM, {sessions:{}, placements:{}});
+if(!customData.sessions) customData.sessions={};
+if(!customData.placements) customData.placements={};
+function saveCustom(){ save(LS_CUSTOM, customData); }
 // Début du cycle = dimanche 31 mai 2026 (premier J1).
 const CYCLE_START = "2026-05-31";
 if(!localStorage.getItem(LS_START)) save(LS_START, CYCLE_START);
@@ -97,6 +153,8 @@ function blockFor(sched){
   return buildBlock(inCycle<2 ? 0 : 1);
 }
 function sessionFor(date){
+  const cs = customPlacedSession(fmt(date)); // séance perso placée → prime sur le programme
+  if(cs) return cs;
   const sched = eff(date);
   const key = WEEKMAP[sched.getDay()];
   if(key==="REST") return REST;
@@ -112,7 +170,7 @@ function weekNum(sched){
 function recordSession(ds, sess, outcomes){
   logMap[ds]={
     date: ds,
-    type: WEEKMAP[eff(parse(ds)).getDay()],
+    type: sess.custom ? "PERSO" : WEEKMAP[eff(parse(ds)).getDay()],
     focus: sess.focus,
     ex: sess.ex.map((e,i)=>({nm:e.nm, r:outcomes[i]||"skip"}))
   };
@@ -134,7 +192,7 @@ function recordFromDay(ds){
 }
 
 /* ---------- TABS ---------- */
-const views={cal:document.getElementById("v-cal"),day:document.getElementById("v-day"),log:document.getElementById("v-log")};
+const views={cal:document.getElementById("v-cal"),day:document.getElementById("v-day"),log:document.getElementById("v-log"),cust:document.getElementById("v-cust")};
 document.querySelectorAll("nav.tabs button").forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll("nav.tabs button").forEach(x=>x.classList.remove("on"));
@@ -143,6 +201,7 @@ document.querySelectorAll("nav.tabs button").forEach(b=>{
     const v=b.dataset.v; views[v].classList.add("on");
     if(v==="day") renderDay();
     if(v==="log") renderLog();
+    if(v==="cust") renderCust();
   };
 });
 
@@ -155,7 +214,7 @@ function dayStatus(ds){
   const sess=sessionFor(parse(ds));
   if(sess.rest) return "rest";
   const d=doneMap[ds];
-  if(!d) return "none";
+  if(!d || d.length!==sess.ex.length) return "none";
   const tot=sess.ex.length, n=d.filter(Boolean).length;
   if(n===0) return "none";
   if(n>=tot) return "done";
@@ -177,13 +236,13 @@ function renderCal(){
     const sess=sessionFor(dt);
     const st=dayStatus(ds);
     const c=document.createElement("div");
-    c.className="cell"+(sess.rest?" rest":"");
+    c.className="cell"+(sess.rest?" rest":"")+(sess.custom?" custom":"");
     if(st==="done")c.classList.add("done");
     if(st==="partial")c.classList.add("partial");
     if(ds===todayS)c.classList.add("today");
     if(ds===selected)c.classList.add("sel");
-    const key=WEEKMAP[eff(dt).getDay()];
-    c.innerHTML=`<span class="d">${dnum}</span><span class="tag">${sess.rest?"REPOS":key}</span>`+
+    const tag=sess.rest?"REPOS":(sess.custom?"PERSO":WEEKMAP[eff(dt).getDay()]);
+    c.innerHTML=`<span class="d">${dnum}</span><span class="tag">${tag}</span>`+
       ((st==="done"||st==="partial")?`<span class="dot"></span>`:"");
     c.onclick=()=>{selected=ds;goDay();};
     grid.appendChild(c);
@@ -212,19 +271,40 @@ function reportBar(isRest){
   if(!rep&&!undo) return "";
   return `<div class="report-bar">${rep}${undo}${info}</div>`;
 }
+// Barre séance perso : sur un jour avec séance perso → badge + retirer/remplacer ;
+// sinon → bouton pour en placer une.
+function customBar(sess){
+  if(sess.custom){
+    return `<div class="cust-bar">
+      <div class="cust-binfo"><span class="cust-badge">★ Séance perso</span><span class="cust-bnm">${esc(sess.focus)}</span></div>
+      <div class="cust-bacts">
+        <button class="cust-swap" onclick="openPicker()">Remplacer</button>
+        <button class="cust-remove" onclick="removeCustomDay()">Retirer</button>
+      </div></div>`;
+  }
+  return `<button class="cust-place" onclick="openPicker()">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Placer une séance perso</button>`;
+}
+// Garantit que le tableau de progression du jour a la bonne longueur (la séance du
+// jour a pu changer : report, placement/retrait perso, édition). Réinitialise sinon.
+function ensureDone(ds,len){
+  let a=doneMap[ds];
+  if(!a||a.length!==len){a=new Array(len).fill(false);doneMap[ds]=a;}
+  return a;
+}
 function renderDay(){
   const dt=parse(selected), sched=eff(dt), sess=sessionFor(dt);
   const host=views.day;
   const dateLbl=`${DOWFULL[dt.getDay()]} ${dt.getDate()} ${MN[dt.getMonth()]}`;
   if(sess.rest){
     host.innerHTML=`<div class="day-hero"><span class="dk">${dateLbl}</span><h2>Jour de repos</h2><span class="focus">Semaine ${weekNum(sched)} du cycle</span></div>
-      <div class="panel rest-card"><div class="ic">🌿</div><h3>${sess.focus}</h3><p>${sess.note}</p></div>`+reportBar(true);
+      <div class="panel rest-card"><div class="ic">🌿</div><h3>${sess.focus}</h3><p>${sess.note}</p></div>`+customBar(sess)+reportBar(true);
     return;
   }
-  if(!doneMap[selected]) doneMap[selected]=new Array(sess.ex.length).fill(false);
-  const done=doneMap[selected];
+  const done=ensureDone(selected,sess.ex.length);
+  const tag=sess.custom?"Perso":WEEKMAP[sched.getDay()];
   let html=`<div class="day-hero"><span class="dk">${dateLbl} · Semaine ${weekNum(sched)}</span>
-    <h2>${WEEKMAP[sched.getDay()]} — ${sess.focus}</h2>
+    <h2>${tag} — ${esc(sess.focus)}</h2>
     <span class="sub">${done.filter(Boolean).length}/${sess.ex.length} exercices validés</span>
     <span class="focus">⏱ ~30 min · haute densité</span></div>
     <div class="start-bar"><button class="start-btn" onclick="startSession()">
@@ -232,13 +312,51 @@ function renderDay(){
   sess.ex.forEach((e,i)=>{
     html+=`<div class="ex${done[i]?' done':''}" data-i="${i}">
       <div class="check" onclick="toggleEx(${i})"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
-      <div class="body"><div class="nm">${e.nm}</div><div class="dt">${e.dt}</div></div>
-      ${e.timer?`<button class="timer-btn" onclick="openTimer('${e.nm.replace(/'/g,"")}',${e.timer})">
+      <div class="body"><div class="nm">${esc(e.nm)}</div><div class="dt">${esc(e.dt)}</div></div>
+      ${e.timer?`<button class="timer-btn" onclick="openTimer('${esc(e.nm).replace(/'/g,"")}',${e.timer})">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>${e.timer}s</button>`:""}
     </div>`;
   });
-  host.innerHTML=html+reportBar(false);
+  host.innerHTML=html+customBar(sess)+reportBar(false);
 }
+/* ---------- PLACEMENT D'UNE SÉANCE PERSO ---------- */
+const ICON_STAR=`<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6L12 17l-5.4 2.6 1.2-6-4.5-4.2 6.1-.8z"/></svg>`;
+const ICON_TRASH=`<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>`;
+// Ouvre le sélecteur de séances perso à placer sur le jour affiché.
+window.openPicker=function(){
+  const list=document.getElementById("pickList");
+  const ids=Object.keys(customData.sessions||{});
+  const dt=parse(selected);
+  const lbl=`${DOWFULL[dt.getDay()]} ${dt.getDate()} ${MN[dt.getMonth()]}`;
+  if(!ids.length){
+    list.innerHTML=`<p class="pick-empty">Aucune séance perso enregistrée.</p>
+      <button class="pick-create" onclick="closePicker();openBuilder(null)">+ Créer une séance</button>`;
+  }else{
+    list.innerHTML=`<p class="pick-sub">Sur ${lbl}</p>`+ids.map(id=>{
+      const s=customData.sessions[id]; const n=(s.ex||[]).length;
+      return `<button class="pick-item" onclick="placeCustomDay('${id}')">
+        <span class="pick-nm">${esc(s.name||"Séance")}</span>
+        <span class="pick-meta">${n} exercice${n>1?"s":""}</span></button>`;
+    }).join("");
+  }
+  document.getElementById("pickModal").classList.add("on");
+};
+window.closePicker=function(){document.getElementById("pickModal").classList.remove("on");};
+// Place une séance perso sur le jour affiché (remplace la séance prévue).
+window.placeCustomDay=function(sid){
+  customData.placements[selected]=sid; delete doneMap[selected];
+  saveCustom(); save(LS_DONE,doneMap);
+  closePicker(); renderDay(); renderCal(); updateStreak(); toast("Séance perso placée");
+};
+// Retire la séance perso du jour affiché : le programme d'origine réapparaît.
+window.removeCustomDay=function(){
+  if(!customData.placements[selected]) return;
+  askConfirm({icon:ICON_STAR,title:"Retirer la séance perso",message:"La séance prévue par le programme réapparaîtra sur ce jour.",okLabel:"Retirer"},()=>{
+    delete customData.placements[selected]; delete doneMap[selected];
+    saveCustom(); save(LS_DONE,doneMap);
+    renderDay(); renderCal(); updateStreak(); toast("Séance perso retirée");
+  });
+};
 // Reporter la séance affichée : pousse son planning (et les suivants) d'un jour.
 window.reportSession=function(){
   const d=parse(selected);
@@ -263,7 +381,7 @@ window.undoReport=function(){
 };
 window.toggleEx=function(i){
   const dt=parse(selected), sess=sessionFor(dt);
-  if(!doneMap[selected]) doneMap[selected]=new Array(sess.ex.length).fill(false);
+  ensureDone(selected,sess.ex.length);
   doneMap[selected][i]=!doneMap[selected][i];
   save(LS_DONE,doneMap);
   recordFromDay(selected);
@@ -310,14 +428,165 @@ function renderLog(){
     const nb=r=>en.ex.filter(x=>x.r===r).length;
     const stat=r=>nb(r)?`<span class="ls ${r}">${nb(r)} ${RLBL[r]}</span>`:"";
     html+=`<div class="log-card">
-      <div class="log-top"><span class="log-tag">${en.type}</span>
-        <div class="log-info"><div class="log-date">${dateLbl}</div><div class="log-focus">${en.focus}</div></div></div>
+      <div class="log-top"><span class="log-tag${en.type==="PERSO"?" perso":""}">${en.type}</span>
+        <div class="log-info"><div class="log-date">${dateLbl}</div><div class="log-focus">${esc(en.focus)}</div></div></div>
       <div class="log-stats">${stat("done")}${stat("hard")}${stat("skip")}</div>
-      <div class="log-ex">${en.ex.map(x=>`<div class="lex ${x.r}"><i></i>${x.nm}</div>`).join("")}</div>
+      <div class="log-ex">${en.ex.map(x=>`<div class="lex ${x.r}"><i></i>${esc(x.nm)}</div>`).join("")}</div>
     </div>`;
   });
   host.innerHTML=html+BACKUP_HTML;
 }
+
+/* ---------- ONGLET PERSO (mes séances) ---------- */
+function sessId(){return "cs"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function renderCust(){
+  const host=views.cust;
+  const sessions=customData.sessions||{};
+  const ids=Object.keys(sessions);
+  let html=`<div class="cust-head"><h2>Mes séances</h2><span>${ids.length} séance${ids.length>1?"s":""}</span></div>
+    <button class="cust-create" onclick="openBuilder(null)">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Créer une séance</button>`;
+  if(!ids.length){
+    html+=`<div class="panel cust-empty"><div class="ic">🛠️</div><h3>Aucune séance perso</h3>
+      <p>Compose une séance à partir des exercices du catalogue, puis place-la sur un jour du calendrier depuis la vue « Séance ».</p></div>`;
+  }else{
+    const pc={};
+    for(const ds in customData.placements){const sid=customData.placements[ds];pc[sid]=(pc[sid]||0)+1;}
+    html+=ids.map(id=>{
+      const s=sessions[id]; const n=(s.ex||[]).length; const placed=pc[id]||0;
+      const summary=(s.ex||[]).map(x=>esc((CATALOG[x.exId]||{}).nom||x.exId)).join(" · ");
+      return `<div class="cust-card">
+        <div class="cust-card-top"><span class="cust-card-nm">${esc(s.name||"Séance")}</span>
+          <span class="cust-card-meta">${n} exo${n>1?"s":""}${placed?` · placée ${placed}×`:""}</span></div>
+        <div class="cust-card-ex">${summary||"—"}</div>
+        <div class="cust-card-acts">
+          <button onclick="openBuilder('${id}')">Modifier</button>
+          <button onclick="duplicateCust('${id}')">Dupliquer</button>
+          <button class="danger" onclick="deleteCust('${id}')">Supprimer</button>
+        </div></div>`;
+    }).join("");
+    html+=`<button class="cust-reset" onclick="resetCust()">Réinitialiser mes séances perso</button>`;
+  }
+  host.innerHTML=html;
+}
+window.duplicateCust=function(id){
+  const s=customData.sessions[id]; if(!s) return;
+  const nid=sessId();
+  customData.sessions[nid]={id:nid, name:(s.name||"Séance")+" (copie)", ex:(s.ex||[]).map(x=>Object.assign({},x))};
+  saveCustom(); renderCust(); toast("Séance dupliquée");
+};
+window.deleteCust=function(id){
+  const s=customData.sessions[id]; if(!s) return;
+  askConfirm({icon:ICON_TRASH,title:"Supprimer la séance",message:`« ${s.name||"Séance"} » sera supprimée et retirée des jours où elle est placée.`,okLabel:"Supprimer"},()=>{
+    delete customData.sessions[id];
+    for(const ds in customData.placements){if(customData.placements[ds]===id){delete customData.placements[ds];delete doneMap[ds];}}
+    saveCustom(); save(LS_DONE,doneMap);
+    renderCust(); renderCal(); updateStreak(); toast("Séance supprimée");
+  });
+};
+window.resetCust=function(){
+  askConfirm({icon:ICON_TRASH,title:"Réinitialiser les séances perso",message:"Toutes tes séances perso et leurs placements seront effacés. Le programme d'origine n'est pas touché.",okLabel:"Réinitialiser"},()=>{
+    for(const ds in customData.placements){delete doneMap[ds];}
+    customData={sessions:{},placements:{}}; saveCustom(); save(LS_DONE,doneMap);
+    renderCust(); renderCal(); updateStreak(); toast("Séances perso réinitialisées");
+  });
+};
+
+/* ---------- ÉDITEUR DE SÉANCE PERSO ---------- */
+// builderState = brouillon en cours d'édition : {id, name, ex:[{exId,mode,sets,reps,holdSec,rest,text}]}.
+let builderState=null;
+function catalogOptions(){
+  return Object.keys(CATALOG).sort((a,b)=>CATALOG[a].nom.localeCompare(CATALOG[b].nom,"fr"))
+    .map(id=>`<option value="${id}">${esc(CATALOG[id].nom)}</option>`).join("");
+}
+window.openBuilder=function(sid){
+  if(sid && customData.sessions[sid]){
+    const s=customData.sessions[sid];
+    builderState={id:sid, name:s.name||"", ex:(s.ex||[]).map(x=>Object.assign({},x))};
+  }else{
+    builderState={id:null, name:"", ex:[]};
+  }
+  document.getElementById("builder").classList.add("on");
+  try{document.body.style.overflow="hidden";}catch(e){}
+  renderBuilder();
+};
+function closeBuilder(){
+  document.getElementById("builder").classList.remove("on");
+  try{document.body.style.overflow="";}catch(e){}
+}
+function bfield(i,key,lbl,val){
+  return `<label class="bld-f">${lbl}
+    <input type="number" inputmode="numeric" min="0" value="${val==null?"":val}" onchange="setBuilderField(${i},'${key}',this.value)"></label>`;
+}
+function builderFields(it,i){
+  if(it.mode==="hold") return bfield(i,"sets","Séries",it.sets)+bfield(i,"holdSec","Hold (s)",it.holdSec)+bfield(i,"rest","Repos (s)",it.rest);
+  if(it.mode==="libre") return `<label class="bld-f bld-f-wide">Texte libre
+    <input type="text" value="${esc(it.text||"")}" placeholder="Ex. 5 min" onchange="setBuilderField(${i},'text',this.value)"></label>`;
+  return bfield(i,"sets","Séries",it.sets)+bfield(i,"reps","Reps",it.reps)+bfield(i,"rest","Repos (s)",it.rest);
+}
+function renderBuilder(){
+  const b=builderState;
+  document.getElementById("builderTitle").textContent=b.id?"Modifier la séance":"Nouvelle séance";
+  let html=`<label class="bld-label">Nom de la séance</label>
+    <input class="bld-name" id="bldName" type="text" placeholder="Ex. Tirage maison" value="${esc(b.name)}">
+    <div class="bld-add">
+      <select id="bldPick">${catalogOptions()}</select>
+      <button class="bld-addbtn" onclick="addBuilderEx()">+ Ajouter</button>
+    </div>
+    <div class="bld-list">`;
+  if(!b.ex.length){
+    html+=`<p class="bld-empty">Aucun exercice. Choisis-en un dans la liste ci-dessus et ajoute-le.</p>`;
+  }
+  const MODES=[["reps","Reps"],["hold","Hold"],["libre","Libre"]];
+  b.ex.forEach((it,i)=>{
+    const cat=CATALOG[it.exId]||{nom:"⚠ "+it.exId};
+    html+=`<div class="bld-ex">
+      <div class="bld-ex-top">
+        <span class="bld-ex-nm">${esc(cat.nom)}</span>
+        <div class="bld-ex-move">
+          <button onclick="moveBuilderEx(${i},-1)"${i===0?" disabled":""}>↑</button>
+          <button onclick="moveBuilderEx(${i},1)"${i===b.ex.length-1?" disabled":""}>↓</button>
+          <button class="bld-del" onclick="removeBuilderEx(${i})">×</button>
+        </div>
+      </div>
+      <div class="bld-ex-mode">${MODES.map(([m,l])=>`<button class="${it.mode===m?'on':''}" onclick="setBuilderMode(${i},'${m}')">${l}</button>`).join("")}</div>
+      <div class="bld-ex-fields">${builderFields(it,i)}</div>
+    </div>`;
+  });
+  html+=`</div>`;
+  document.getElementById("builderBody").innerHTML=html;
+  const nm=document.getElementById("bldName");
+  nm.oninput=e=>{builderState.name=e.target.value;};
+}
+window.addBuilderEx=function(){
+  const sel=document.getElementById("bldPick"); const id=sel&&sel.value;
+  if(!id||!CATALOG[id]) return;
+  const type=CATALOG[id].type||"reps";
+  const it={exId:id, mode:type};
+  if(type==="hold"){it.sets=3;it.holdSec=20;it.rest="";}
+  else if(type==="libre"){it.text="5 min";}
+  else {it.sets=4;it.reps=10;it.rest=60;}
+  builderState.ex.push(it); renderBuilder();
+};
+window.removeBuilderEx=function(i){builderState.ex.splice(i,1);renderBuilder();};
+window.moveBuilderEx=function(i,d){const a=builderState.ex,j=i+d;if(j<0||j>=a.length)return;const t=a[i];a[i]=a[j];a[j]=t;renderBuilder();};
+window.setBuilderField=function(i,k,v){if(builderState.ex[i])builderState.ex[i][k]=v;};
+window.setBuilderMode=function(i,m){
+  const it=builderState.ex[i]; if(!it) return; it.mode=m;
+  if(m==="hold"){if(it.holdSec==null)it.holdSec=20;if(it.sets==null)it.sets=3;}
+  else if(m==="libre"){if(it.text==null)it.text="5 min";}
+  else {if(it.reps==null)it.reps=10;if(it.sets==null)it.sets=4;if(it.rest==null||it.rest==="")it.rest=60;}
+  renderBuilder();
+};
+window.saveBuilder=function(){
+  const b=builderState; if(!b) return;
+  if(!b.ex.length){toast("Ajoute au moins un exercice");return;}
+  const name=(b.name||"").trim()||"Séance perso";
+  const id=b.id||sessId();
+  customData.sessions[id]={id, name, ex:b.ex.map(x=>Object.assign({},x))};
+  saveCustom(); closeBuilder(); renderCust(); renderCal(); renderDay(); updateStreak();
+  toast(b.id?"Séance modifiée":"Séance créée");
+};
 
 /* ---------- STREAK ---------- */
 function updateStreak(){
@@ -370,7 +639,7 @@ window.startSession=function(){
   if(sess.rest) return;
   gsSessDate=selected; gsExCount=sess.ex.length;
   gsQueue=buildQueue(sess); gsIdx=0; gsOutcome=new Array(sess.ex.length);
-  if(!doneMap[selected]) doneMap[selected]=new Array(sess.ex.length).fill(false);
+  ensureDone(selected,sess.ex.length);
   document.getElementById("gs").classList.add("on");
   try{document.body.style.overflow="hidden";}catch(e){}
   acquireWakeLock();
