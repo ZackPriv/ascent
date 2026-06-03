@@ -1043,7 +1043,7 @@ function buildQueue(sess){
   sess.ex.forEach((e,ei)=>{
     const p=parseEx(e);
     for(let s=1;s<=p.sets;s++){
-      q.push({type:"work", ei, exName:e.nm, set:s, sets:p.sets,
+      q.push({type:"work", ei, exName:e.nm, exId:e.id||"", set:s, sets:p.sets,
         isHold:p.isHold, holdSec:p.holdSec, reps:p.reps, perLeg:p.perLeg,
         mobility:p.mobility});
       if(s<p.sets && p.rest>0) q.push({type:"rest", ei, exName:e.nm, dur:p.rest, nextSet:s+1, sets:p.sets});
@@ -1117,6 +1117,18 @@ function renderStep(){
   const body=document.getElementById("gsBody"), foot=document.getElementById("gsFoot");
   document.getElementById("gsProg").textContent=`Exo ${(st.ei??0)+1} / ${gsExCount}`;
   document.getElementById("gsBar").style.width=Math.round((gsIdx/gsQueue.length)*100)+"%";
+  // bouton repères (top bar) : visible sur les étapes "work" liées à un exo du catalogue.
+  // Ouvre la fiche en lecture seule sans toucher au chrono/série en cours.
+  const gsInfo=document.getElementById("gsInfo");
+  if(gsInfo){
+    if(st.type==="work" && st.exId && CATALOG[st.exId]){
+      gsInfo.style.visibility="visible";
+      gsInfo.onclick=()=>openExDetail(st.exId);
+    }else{
+      gsInfo.style.visibility="hidden";
+      gsInfo.onclick=null;
+    }
+  }
 
   if(st.type==="rest" || st.type==="trans"){
     const isTrans=st.type==="trans";

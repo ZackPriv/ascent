@@ -166,6 +166,11 @@ nav.tabs button.on{background:rgba(217,104,47,.10)}
 .gs-top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 18px 10px}
 .gs-top .x{background:var(--panel2);border:1px solid var(--line);color:var(--chalk);width:40px;height:40px;border-radius:12px;font-size:22px;cursor:pointer}
 .gs-top .prog{font-family:'Spline Sans Mono';font-size:11px;color:var(--mut);letter-spacing:.1em}
+.gs-info{display:flex;align-items:center;justify-content:center;background:var(--panel2);border:1px solid var(--line);color:var(--mut);width:40px;height:40px;border-radius:12px;cursor:pointer;padding:0;flex-shrink:0}
+.gs-info svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.gs-info:active{transform:scale(.94);border-color:var(--gold);color:var(--gold)}
+/* la fiche exo doit passer au-dessus du mode guidé (z-index 80) quand ouverte depuis là */
+#exModal{z-index:90}
 .gs-pbar{height:4px;background:var(--panel2);margin:0 18px;border-radius:4px;overflow:hidden}
 .gs-pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--rust),var(--rust2));border-radius:4px;transition:.4s width}
 .gs-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px;text-align:center}
