@@ -237,6 +237,96 @@ nav.tabs button.on{background:rgba(217,104,47,.10)}
 .bk-import{background:var(--panel2);color:var(--chalk);border:1px solid var(--line)}
 .backup-btns button:active{transform:scale(.99)}
 
+/* activités libres — bouton d'ajout (vue jour + journal) */
+.act-add{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;background:var(--panel2);border:1px dashed var(--line);border-radius:12px;padding:13px;color:var(--sky);font-family:'Bricolage Grotesque';font-weight:700;font-size:15px;cursor:pointer}
+.act-add svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round}
+.act-add:active{transform:scale(.99);border-color:var(--sky)}
+.log-act-add{margin:0 0 14px}
+/* activités libres — liste dans la vue jour */
+.act-day-list{display:flex;flex-direction:column;gap:9px;margin-top:11px}
+.act-day-item{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--sky);border-radius:12px;padding:11px 13px}
+.act-day-ic{flex-shrink:0;font-size:20px;line-height:1}
+.act-day-body{flex:1;min-width:0}
+.act-day-nm{font-size:15px;font-weight:700;color:var(--chalk)}
+.act-day-sum{font-family:'Spline Sans Mono';font-size:11px;color:var(--mut);margin-top:2px}
+.act-day-del{flex-shrink:0;background:none;border:none;color:var(--dim);font-size:17px;cursor:pointer;padding:4px 6px;line-height:1}
+.act-day-del:active{color:var(--rust2)}
+/* activités libres — carte journal (style distinct) */
+.log-tag.activity{background:rgba(122,162,194,.16);color:var(--sky);font-size:20px}
+.act-card{border-left:3px solid var(--sky)}
+.act-card .log-top{margin-bottom:0}
+.act-del{margin-left:auto;flex-shrink:0;background:none;border:none;color:var(--dim);font-size:17px;cursor:pointer;padding:4px 6px;line-height:1}
+.act-del:active{color:var(--rust2)}
+.act-summary{font-family:'Spline Sans Mono';font-size:12px;color:var(--chalk);margin-top:10px;padding-top:11px;border-top:1px solid var(--line);letter-spacing:.02em}
+
+/* modale d'ajout d'activité */
+.acard{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:22px;padding:26px 22px;width:100%;max-width:360px;position:relative;max-height:86vh;overflow:auto}
+.act-title{font-family:'Bricolage Grotesque';font-weight:800;font-size:19px;color:var(--chalk);margin-bottom:18px;padding-right:30px}
+.act-l{display:block;font-family:'Spline Sans Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);margin-bottom:14px}
+.act-l input,.acard select{display:block;width:100%;margin-top:7px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px;color:var(--txt);font-family:'Bricolage Grotesque';font-weight:600;font-size:16px}
+.act-l input:focus,.acard select:focus{outline:none;border-color:var(--gold)}
+.act-opt{text-transform:none;letter-spacing:0;color:var(--dim);opacity:.7}
+.act-pace{background:rgba(122,162,194,.1);border:1px solid rgba(122,162,194,.3);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-family:'Spline Sans Mono';font-size:12px;color:var(--mut);letter-spacing:.05em;text-transform:uppercase}
+.act-pace b{color:var(--sky);font-size:18px;font-weight:600}
+.act-pace-u{font-size:11px}
+.act-actions{display:flex;gap:10px;margin-top:4px}
+.act-cancel{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--chalk);border-radius:12px;padding:14px;font-family:'Bricolage Grotesque';font-weight:700;font-size:15px;cursor:pointer}
+.act-save{flex:2;background:var(--moss);color:#16130f;border:none;border-radius:12px;padding:14px;font-family:'Bricolage Grotesque';font-weight:800;font-size:15px;cursor:pointer}
+.act-save:active,.act-cancel:active{transform:scale(.98)}
+
+/* ---------- onglet stats ---------- */
+/* 5 onglets désormais : on resserre un peu la nav pour tout faire tenir */
+nav.tabs button{font-size:9px;letter-spacing:.05em;white-space:nowrap}
+.stats-head{padding:6px 2px 12px}
+.stats-head h2{font-size:25px;font-weight:800;letter-spacing:-.01em}
+.stats-period{display:flex;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:5px;margin-bottom:20px}
+.stats-period button{flex:1;padding:10px 6px;border:none;border-radius:9px;background:none;color:var(--mut);font-family:'Spline Sans Mono';font-size:11px;letter-spacing:.03em;cursor:pointer;transition:.2s}
+.stats-period button.on{background:var(--rust);color:#fff;font-weight:600}
+/* chiffres clés */
+.stat-cards{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:22px}
+.stat-card{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:16px;padding:16px 15px;display:flex;flex-direction:column;gap:2px}
+.stat-ic{font-size:20px;line-height:1;margin-bottom:6px}
+.stat-val{font-family:'Bricolage Grotesque';font-weight:800;font-size:25px;color:var(--chalk);letter-spacing:-.01em;line-height:1.05}
+.stat-lbl{font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.04em;color:var(--mut);text-transform:uppercase}
+/* exercices clés */
+.keyex-row{display:flex;gap:11px;margin-bottom:22px}
+.keyex{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px;text-align:center}
+.keyex-val{display:block;font-family:'Bricolage Grotesque';font-weight:800;font-size:24px;color:var(--gold)}
+.keyex-lbl{display:block;font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.04em;color:var(--mut);text-transform:uppercase;margin-top:4px}
+/* répartition catégories */
+.cat-bars{display:flex;flex-direction:column;gap:11px;margin-bottom:22px}
+.cat-row{display:flex;align-items:center;gap:11px}
+.cat-name{flex-shrink:0;width:80px;font-size:13px;color:var(--chalk)}
+.cat-track{flex:1;height:11px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.cat-track i{display:block;height:100%;border-radius:6px;transition:width .4s}
+.cat-pct{flex-shrink:0;width:34px;text-align:right;font-family:'Spline Sans Mono';font-size:11px;color:var(--mut)}
+/* course */
+.course-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:22px}
+.course-stat{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--sky);border-radius:13px;padding:14px}
+.cs-val{display:block;font-family:'Bricolage Grotesque';font-weight:800;font-size:19px;color:var(--chalk)}
+.cs-lbl{display:block;font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.04em;color:var(--mut);text-transform:uppercase;margin-top:3px}
+/* régularité */
+.sec-sub{text-transform:none;letter-spacing:.02em;color:var(--mut);opacity:.8}
+.reg-card{padding:16px}
+.reg-count{font-size:14px;color:var(--chalk);margin-bottom:13px}
+.reg-count b{font-family:'Bricolage Grotesque';font-weight:800;font-size:18px;color:var(--moss)}
+.heat{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
+.heat-col{display:flex;flex-direction:column;gap:4px}
+.heat-cell{width:15px;height:15px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);flex-shrink:0}
+.heat-cell.off{background:transparent;border-color:transparent}
+.heat-cell.lv1{background:rgba(94,155,184,.55);border-color:transparent}
+.heat-cell.lv2{background:var(--moss);border-color:transparent}
+.heat-cell.td{box-shadow:0 0 0 1.5px var(--gold)}
+.heat-legend{display:flex;align-items:center;gap:5px;margin-top:13px;font-family:'Spline Sans Mono';font-size:10px;color:var(--mut)}
+.heat-legend .heat-cell{width:12px;height:12px;margin-left:8px}
+.heat-legend .heat-cell:first-child{margin-left:0}
+/* états vides / notes */
+.stats-empty{text-align:center;padding:34px 18px}
+.stats-empty .ic{font-size:34px;margin-bottom:10px}
+.stats-empty h3{font-size:18px;color:var(--chalk);margin-bottom:8px}
+.stats-empty p{color:var(--mut);font-size:14px;line-height:1.55}
+.stats-note{color:var(--mut);font-size:13px;line-height:1.5;padding:2px 2px 6px;margin-bottom:16px}
+
 /* calendrier : jour avec séance perso */
 .cell.custom{border-color:rgba(216,162,58,.45)}
 .cell.custom .tag{color:var(--gold)}
