@@ -1026,7 +1026,7 @@ function updateStreak(){
 /* ---------- GUIDED SESSION ---------- */
 // Construit la file d'étapes : pour chaque exo → séries (work) entrecoupées de repos.
 let gsQueue=[], gsIdx=0, gsSessDate=null, gsExCount=0, gsOutcome=[];
-let gsTimer=null, gsLeft=0, gsTotal=0;
+let gsTimer=null, gsLeft=0, gsTotal=0, gsPaused=false, gsOnEnd=null;
 const GS_CIRC=2*Math.PI*100; // r=100
 
 // Résultat par exo pour le journal. Priorité : hard > done > skip (hard reste collant).
@@ -1046,10 +1046,10 @@ function buildQueue(sess){
       q.push({type:"work", ei, exName:e.nm, exId:e.id||"", set:s, sets:p.sets,
         isHold:p.isHold, holdSec:p.holdSec, reps:p.reps, perLeg:p.perLeg,
         mobility:p.mobility});
-      if(s<p.sets && p.rest>0) q.push({type:"rest", ei, exName:e.nm, dur:p.rest, nextSet:s+1, sets:p.sets});
+      if(s<p.sets && p.rest>0) q.push({type:"rest", ei, exName:e.nm, exId:e.id||"", dur:p.rest, nextSet:s+1, sets:p.sets});
     }
-    // repos de transition entre exos (sauf après le dernier)
-    if(ei<sess.ex.length-1) q.push({type:"trans", ei, dur:60, nextEx:sess.ex[ei+1].nm});
+    // repos de transition entre exos (sauf après le dernier) — on rattache l'exo suivant pour le panneau de pause
+    if(ei<sess.ex.length-1) q.push({type:"trans", ei, dur:60, nextEx:sess.ex[ei+1].nm, exName:sess.ex[ei+1].nm, exId:sess.ex[ei+1].id||""});
   });
   return q;
 }
@@ -1115,6 +1115,7 @@ function renderStep(){
   if(gsIdx>=gsQueue.length){return renderFinish();}
   const st=gsQueue[gsIdx];
   const body=document.getElementById("gsBody"), foot=document.getElementById("gsFoot");
+  body.classList.remove("has-panel"); // repart d'un body propre (un panneau de pause a pu rester ouvert)
   document.getElementById("gsProg").textContent=`Exo ${(st.ei??0)+1} / ${gsExCount}`;
   document.getElementById("gsBar").style.width=Math.round((gsIdx/gsQueue.length)*100)+"%";
   // bouton repères (top bar) : visible sur les étapes "work" liées à un exo du catalogue.
@@ -1140,12 +1141,14 @@ function renderStep(){
       </div>
       <div class="gs-meta">${isTrans?("Prochain : "+st.nextEx):("Série "+st.nextSet+" / "+st.sets)}</div>`;
     foot.innerHTML=`<button class="gs-main skip" id="gsSkip">Passer le repos</button>
+      <div class="gs-row"><button id="gsPause">Pause</button></div>
       <div class="gs-add"><button data-d="-15">−15s</button><button data-d="15">+15s</button><button data-d="30">+30s</button></div>`;
     document.getElementById("gsSkip").onclick=()=>{stopGsTimer();next();};
     foot.querySelectorAll(".gs-add button").forEach(b=>b.onclick=()=>{
       gsLeft=Math.max(1,gsLeft+ +b.dataset.d); gsTotal=Math.max(gsTotal,gsLeft); updGsRing();
     });
     startGsTimer(st.dur, ()=>{ try{navigator.vibrate&&navigator.vibrate(150);}catch(e){}; beep(); next(); });
+    bindGsPause(st);
     return;
   }
 
@@ -1168,7 +1171,7 @@ function renderStep(){
       <div class="gs-hint" id="gsHoldHint">Mets-toi en position…</div>
       ${upcomingHtml}`;
     foot.innerHTML=`<button class="gs-main skip" id="gsRestart">↺ Recommencer la série</button>
-      <div class="gs-row"><button id="gsStop">Stop / valider</button><button id="gsDone">Valider sans chrono</button></div>`;
+      <div class="gs-row"><button id="gsPause">Pause</button><button id="gsDone">Valider</button></div>`;
     const runHold=()=>{
       // phase de préparation : 4s, anneau bleu, puis lancement auto du hold
       const phaseEl=document.getElementById("gsPhase");
@@ -1187,10 +1190,10 @@ function renderStep(){
         startGsTimer(st.holdSec,()=>{try{navigator.vibrate&&navigator.vibrate([150,60,150]);}catch(e){};beep();setOutcome(st.ei,"done");markWork(st);next();});
       });
     };
-    document.getElementById("gsRestart").onclick=()=>{ runHold(); };
-    document.getElementById("gsStop").onclick=()=>{stopGsTimer();setOutcome(st.ei,"done");markWork(st);next();};
+    document.getElementById("gsRestart").onclick=()=>{ closeGsPanel(); runHold(); bindGsPause(st); };
     document.getElementById("gsDone").onclick=()=>{stopGsTimer();setOutcome(st.ei,"done");markWork(st);next();};
     runHold(); // démarre tout seul à l'affichage de l'exo
+    bindGsPause(st);
     return;
   }
   // reps
@@ -1237,19 +1240,62 @@ function renderFinish(){
     document.querySelector('[data-v="cal"]').click();};
 }
 
-/* timer du mode guidé */
+/* timer du mode guidé — supporte pause/reprise (hold ET repos partagent ce timer) */
 function startGsTimer(sec,onEnd){
-  stopGsTimer(); gsTotal=sec; gsLeft=sec; updGsRing();
+  stopGsTimer(); gsTotal=sec; gsLeft=sec; gsOnEnd=onEnd||null; gsPaused=false; updGsRing();
+  gsRunTick();
+}
+function gsRunTick(){
   gsTimer=setInterval(()=>{
     gsLeft--; updGsRing();
-    if(gsLeft<=0){stopGsTimer(); if(onEnd)onEnd();}
+    if(gsLeft<=0){ const cb=gsOnEnd; stopGsTimer(); if(cb)cb(); }
   },1000);
 }
-function stopGsTimer(){clearInterval(gsTimer);gsTimer=null;}
+// suspend le décompte en conservant gsLeft/gsTotal/gsOnEnd ; gardé pour la reprise.
+function pauseGsTimer(){ if(gsTimer && !gsPaused){ clearInterval(gsTimer); gsTimer=null; gsPaused=true; } }
+// reprend exactement là où on s'était arrêté, avec le même callback de fin.
+function resumeGsTimer(){ if(gsPaused){ gsPaused=false; gsRunTick(); } }
+function stopGsTimer(){ clearInterval(gsTimer); gsTimer=null; gsPaused=false; gsOnEnd=null; }
 function updGsRing(){
   const n=document.getElementById("gsNum"), r=document.getElementById("gsRing");
   if(n)n.textContent=Math.max(0,gsLeft);
   if(r)r.style.strokeDashoffset=GS_CIRC*(1-Math.max(0,gsLeft)/(gsTotal||1));
+}
+
+/* Pause du mode guidé : bouton « Pause » ⇄ « Reprendre » + panneau d'infos de l'exo. */
+function bindGsPause(st){
+  const btn=document.getElementById("gsPause");
+  if(!btn) return;
+  btn.textContent = gsPaused ? "Reprendre" : "Pause";
+  btn.onclick=()=>{
+    if(gsPaused){ resumeGsTimer(); btn.textContent="Pause"; closeGsPanel(); }
+    else { pauseGsTimer(); btn.textContent="Reprendre"; openGsPanel(st); }
+  };
+}
+// Panneau lecture seule injecté dans #gsBody pendant la pause (nom + muscles + cues).
+function gsPauseInfoHtml(st){
+  const cat = st && st.exId ? CATALOG[st.exId] : null;
+  const name = (st && st.exName) ? st.exName : (cat ? cat.nom : "");
+  let h=`<div class="gs-pause-panel" id="gsPausePanel"><div class="gpp-name">${esc(name||"Exercice")}</div>`;
+  const muscles = cat && Array.isArray(cat.muscles) ? cat.muscles : [];
+  if(muscles.length){
+    h+=`<div class="gpp-tags">`+muscles.map(m=>`<span class="muscle-tag">${esc(muscleLabel(m))}</span>`).join("")+`</div>`;
+  }
+  const cues = cat && Array.isArray(cat.cues) ? cat.cues : [];
+  if(cues.length){
+    h+=`<div class="gpp-lbl">Points clés</div><ul class="ex-d-cues">`+cues.map(c=>`<li>${esc(c)}</li>`).join("")+`</ul>`;
+  }
+  return h+`</div>`;
+}
+function openGsPanel(st){
+  const body=document.getElementById("gsBody");
+  if(!body || document.getElementById("gsPausePanel")) return;
+  body.insertAdjacentHTML("beforeend", gsPauseInfoHtml(st));
+  body.classList.add("has-panel");
+}
+function closeGsPanel(){
+  const p=document.getElementById("gsPausePanel"); if(p)p.remove();
+  const body=document.getElementById("gsBody"); if(body)body.classList.remove("has-panel");
 }
 
 /* ---------- TIMER ---------- */

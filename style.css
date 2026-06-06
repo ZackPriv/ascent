@@ -196,6 +196,12 @@ nav.tabs button.on{background:rgba(217,104,47,.10)}
 .gs-rest{color:var(--sky)!important}
 .gs-add{display:flex;gap:8px;justify-content:center;margin-top:4px}
 .gs-add button{background:var(--panel2);border:1px solid var(--line);color:var(--sky);font-family:'Spline Sans Mono';font-size:12px;padding:8px 14px;border-radius:10px;cursor:pointer}
+/* panneau d'infos affiché pendant la pause */
+.gs-body.has-panel{justify-content:flex-start;overflow-y:auto}
+.gs-pause-panel{width:100%;max-width:440px;margin:18px auto 4px;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px}
+.gpp-name{font-size:18px;font-weight:800;color:var(--chalk);margin-bottom:10px;line-height:1.15}
+.gpp-tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.gpp-lbl{display:block;font-family:'Spline Sans Mono';font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
 .gs-finish{text-align:center}
 .gs-finish .ic{font-size:54px;margin-bottom:14px}
 .gs-finish h2{font-size:28px;font-weight:800;margin-bottom:8px}
