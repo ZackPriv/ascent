@@ -1,26 +1,27 @@
 {
   "A": {
     "J1": {
-      "focus": "Tirage + Crow",
+      "focus": "Tirage + Muscle-up",
       "exercices": [
         { "id": "pullup_strict", "series": "5 × 3 · repos 75s" },
-        { "id": "pullup_negative", "series": "3 × 5s descente" },
-        { "id": "row_table", "series": "3 × 8" },
-        { "id": "crow_hold", "series": "6 × 5s", "secondes": 5 },
-        { "id": "scapular_pull", "series": "3 × 8" },
-        { "id": "mobility_flex_wrists", "series": "5 min", "secondes": 300 }
+        { "id": "pullup_explosive", "series": "4 × 3 · explosif" },
+        { "id": "muscleup_transition", "series": "3 × 4" },
+        { "id": "row_table", "series": "3 × 8 · repos 60s" },
+        { "id": "dip_chair", "series": "3 × 8" },
+        { "id": "crow_hold", "series": "5 × 5s", "secondes": 5 },
+        { "id": "shoulder_dislocate", "series": "2 × 10" }
       ]
     },
     "J2": {
       "focus": "Poussée + L-sit",
       "exercices": [
-        { "id": "pushup", "series": "4 × 14 · repos 60s" },
-        { "id": "pushup_diamond", "series": "3 × 9" },
+        { "id": "pushup", "series": "5 × 10 · repos 60s" },
+        { "id": "pushup_diamond", "series": "4 × 6" },
         { "id": "dip_chair", "series": "4 × 8" },
-        { "id": "lsit_leg_raise", "series": "3 × 10 · repos 45s" },
-        { "id": "lsit_knee_raise", "series": "3 × 8" },
-        { "id": "lsit_tuck_hold", "series": "4 × 10s", "secondes": 10 },
-        { "id": "mobility_shoulders", "series": "5 min", "secondes": 300 }
+        { "id": "pushup_wide", "series": "3 × 8" },
+        { "id": "lsit_hanging_knee", "series": "3 × 8" },
+        { "id": "lsit_hanging_hold", "series": "4 × 8s", "secondes": 8 },
+        { "id": "pike_stretch", "series": "3 × 40s", "secondes": 40 }
       ]
     },
     "J3": {
@@ -28,90 +29,93 @@
       "exercices": [
         { "id": "handstand_wall", "series": "6 × 6s", "secondes": 6 },
         { "id": "crow_hold", "series": "5 × 5s", "secondes": 5 },
-        { "id": "dead_hang", "series": "3 × 35s", "secondes": 35 },
-        { "id": "ankle_mobility", "series": "2 × 40s", "secondes": 40 },
-        { "id": "forward_fold", "series": "3 × 40s", "secondes": 40 },
-        { "id": "mobility_hips_wrists", "series": "5 min", "secondes": 300 }
+        { "id": "pushup_incline", "series": "3 × 12" },
+        { "id": "ankle_mobility", "series": "3 × 30s", "secondes": 30 },
+        { "id": "pancake_stretch", "series": "3 × 40s", "secondes": 40 },
+        { "id": "bridge_hold", "series": "3 × 20s", "secondes": 20 }
       ]
     },
     "J4": {
-      "focus": "Jambes (Pistol) + Tirage",
+      "focus": "Jambes (Pistol) + Back lever",
       "exercices": [
         { "id": "ankle_mobility", "series": "2 × 30s", "secondes": 30 },
         { "id": "pistol_box_squat", "series": "3 × 6 / jambe" },
         { "id": "pistol_negative", "series": "3 × 4 / jambe" },
-        { "id": "pistol_assisted", "series": "3 × 5 / jambe" },
-        { "id": "pullup_strict", "series": "4 × 3" },
-        { "id": "mobility_hamstrings", "series": "5 min", "secondes": 300 }
+        { "id": "skin_the_cat", "series": "3 × 4" },
+        { "id": "back_lever_tuck", "series": "4 × 8s", "secondes": 8 },
+        { "id": "dip_chair", "series": "3 × 8" },
+        { "id": "couch_stretch", "series": "2 × 40s / côté", "secondes": 40 }
       ]
     },
     "J5": {
       "focus": "Poussée + Handstand + L-sit",
       "exercices": [
-        { "id": "pushup", "series": "4 × 15" },
-        { "id": "pike_pushup", "series": "4 × 8" },
+        { "id": "pushup", "series": "5 × 11 · repos 60s" },
+        { "id": "pushup_diamond", "series": "4 × 7" },
+        { "id": "pike_pushup", "series": "4 × 6" },
         { "id": "handstand_wall", "series": "6 × 7s", "secondes": 7 },
-        { "id": "lsit_tuck_hold", "series": "3 × 10s", "secondes": 10 },
-        { "id": "hollow_hold", "series": "3 × 25s", "secondes": 25 },
-        { "id": "mobility_wrists", "series": "5 min", "secondes": 300 }
+        { "id": "lsit_hanging_hold", "series": "3 × 8s", "secondes": 8 },
+        { "id": "hollow_hold", "series": "3 × 20s", "secondes": 20 }
       ]
     }
   },
   "B": {
     "J1": {
-      "focus": "Tirage + Crow",
+      "focus": "Tirage + Muscle-up",
       "exercices": [
-        { "id": "pullup_strict", "series": "5 × 3 · vise +1 rep au test" },
-        { "id": "pullup_negative", "series": "3 × 6s descente" },
-        { "id": "row_table", "series": "4 × 8" },
-        { "id": "crow_hold", "series": "6 × 6s", "secondes": 6 },
-        { "id": "scapular_pull", "series": "3 × 10" },
-        { "id": "mobility_flex_wrists", "series": "5 min", "secondes": 300 }
+        { "id": "pullup_strict", "series": "5 × 3-4 · repos 75s" },
+        { "id": "pullup_explosive", "series": "4 × 4 · explosif" },
+        { "id": "muscleup_transition", "series": "3 × 5" },
+        { "id": "row_table", "series": "4 × 8 · repos 60s" },
+        { "id": "dip_chair", "series": "3 × 10" },
+        { "id": "crow_hold", "series": "5 × 7s", "secondes": 7 },
+        { "id": "shoulder_dislocate", "series": "2 × 12" }
       ]
     },
     "J2": {
       "focus": "Poussée + L-sit",
       "exercices": [
-        { "id": "pushup", "series": "4 × 16 · repos 60s" },
-        { "id": "pushup_diamond", "series": "3 × 11" },
+        { "id": "pushup", "series": "5 × 12 · repos 60s" },
+        { "id": "pushup_diamond", "series": "4 × 8" },
         { "id": "dip_chair", "series": "4 × 10" },
-        { "id": "lsit_knee_raise", "series": "3 × 10" },
-        { "id": "lsit_tuck_hold", "series": "4 × 14s", "secondes": 14 },
-        { "id": "lsit_oneleg", "series": "3 × 6s", "secondes": 6 },
-        { "id": "mobility_shoulders", "series": "5 min", "secondes": 300 }
+        { "id": "pushup_wide", "series": "3 × 10" },
+        { "id": "lsit_hanging_hold", "series": "4 × 12s", "secondes": 12 },
+        { "id": "lsit_hanging_leg", "series": "3 × 6" },
+        { "id": "pike_stretch", "series": "3 × 45s", "secondes": 45 }
       ]
     },
     "J3": {
       "focus": "Skill + Souplesse",
       "exercices": [
         { "id": "handstand_wall_face", "series": "6 × 7s", "secondes": 7 },
-        { "id": "crow_hold", "series": "5 × 6s", "secondes": 6 },
-        { "id": "dead_hang", "series": "3 × 40s", "secondes": 40 },
-        { "id": "ankle_mobility", "series": "2 × 45s", "secondes": 45 },
-        { "id": "forward_fold", "series": "3 × 45s", "secondes": 45 },
-        { "id": "mobility_hips_wrists", "series": "5 min", "secondes": 300 }
+        { "id": "crow_hold", "series": "5 × 8s", "secondes": 8 },
+        { "id": "pushup_incline", "series": "3 × 14" },
+        { "id": "ankle_mobility", "series": "3 × 40s", "secondes": 40 },
+        { "id": "pancake_stretch", "series": "3 × 45s", "secondes": 45 },
+        { "id": "bridge_hold", "series": "3 × 25s", "secondes": 25 }
       ]
     },
     "J4": {
-      "focus": "Jambes (Pistol) + Tirage",
+      "focus": "Jambes (Pistol) + Back lever",
       "exercices": [
         { "id": "ankle_mobility", "series": "2 × 30s", "secondes": 30 },
         { "id": "pistol_box_squat", "series": "3 × 8 / jambe" },
         { "id": "pistol_negative", "series": "3 × 5 / jambe" },
-        { "id": "pistol_assisted", "series": "3 × 6 / jambe" },
-        { "id": "pullup_strict", "series": "4 × 3-4" },
-        { "id": "mobility_hamstrings", "series": "5 min", "secondes": 300 }
+        { "id": "skin_the_cat", "series": "3 × 5" },
+        { "id": "back_lever_tuck", "series": "4 × 12s", "secondes": 12 },
+        { "id": "dip_chair", "series": "3 × 10" },
+        { "id": "couch_stretch", "series": "2 × 45s / côté", "secondes": 45 }
       ]
     },
     "J5": {
       "focus": "Poussée + Handstand + L-sit",
       "exercices": [
-        { "id": "pushup", "series": "4 × 17" },
-        { "id": "pike_pushup", "series": "4 × 10" },
+        { "id": "pushup", "series": "5 × 13 · repos 60s" },
+        { "id": "pushup_diamond", "series": "4 × 9" },
+        { "id": "pike_pushup", "series": "4 × 8" },
         { "id": "handstand_wall", "series": "6 × 8s", "secondes": 8 },
-        { "id": "lsit_oneleg", "series": "3 × 8s", "secondes": 8 },
-        { "id": "hollow_hold", "series": "3 × 30s", "secondes": 30 },
-        { "id": "mobility_wrists", "series": "5 min", "secondes": 300 }
+        { "id": "lsit_hanging_hold", "series": "3 × 12s", "secondes": 12 },
+        { "id": "hollow_hold", "series": "3 × 25s", "secondes": 25 }
       ]
     }
   }
